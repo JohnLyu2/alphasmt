@@ -23,3 +23,8 @@ class Z3Strategy():
     """
     def __init__(self, actionLst):
         self.actionLst = actionLst
+
+    def getValidAction():
+        pass
+
+    def apply
