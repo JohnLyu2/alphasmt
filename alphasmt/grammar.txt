@@ -1,0 +1,17 @@
+<Strategy>(QF_NIA/BV) := <SolvingTactic>(QF_NIA/BV)  [0]
+<Strategy>(QF_NIA/BV) := (then <PreprocessTactic>(QF_NIA/BV), <Strategy>(QF_NIA/BV))  [1]
+<Strategy>(QF_NIA/BV) := (or-else <FailableStrategy>(QF_NIA/BV) <Strategy>(QF_NIA/BV))  [2]
+
+<FailableStrategy>(QF_NIA) := (then nla2bv <Strategy>(BV))  [5]
+<FailableStrategy>(QF_NIA/BV) := (try-for <Strategy>(QF_NIA/BV) <timeout>)  [6]
+
+<SolvingTactic>(QF_NIA/BV) := smt  [10]
+<SolvingTactic>(QF_NIA) := qfnra-nlsat  [11]
+
+<PreprocessTactic>(QF_NIA/BV) := simplify [20]
+<PreprocessTactic>(QF_NIA/BV) := propagate-values [21]
+<PreprocessTactic>(QF_NIA/BV) := ctx-simplify [22]
+<PreprocessTactic>(QF_NIA/BV) := elim-uncnstr [23]
+<PreprocessTactic>(QF_NIA/BV) := solve-eqs [24]
+<PreprocessTactic>(BV) := max-bv-sharing [25]
+<PreprocessTactic>(BV) := bit-blast [26]
