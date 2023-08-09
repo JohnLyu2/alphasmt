@@ -29,13 +29,12 @@ class FailableStratNonterm(DerivationNode):
             return [6]
         return list(self.action_dict.keys())
 
-    def applyBVRule(self):
-        tactic_name = "nla2bv"
-        params = TACTIC_PARAMS[tactic_name] if tactic_name in TACTIC_PARAMS else None
-        self.children.append(TacticTerminal(tactic_name, params))
+    def applyBVRule(self, params):
+        # params = TACTIC_PARAMS[tactic_name] if tactic_name in TACTIC_PARAMS else None
+        self.children.append(TacticTerminal("nla2bv", params))
         self.children.append(StrategyNonterm("BV")) # use <strategy> but with different tactic sets
 
-    def applyTryRule(self):
+    def applyTryRule(self, params):
         self.children.append(StrategyNonterm(self.logic))
 
     def clone(self):
@@ -71,14 +70,14 @@ class StrategyNonterm(DerivationNode):
     def isTerminal(self):
         return False
 
-    def applyThenRule(self):
-        self.children.append(PreprocessNonterm(self.logic))
+    def applyThenRule(self, params):
+        self.children.append(PreprocessNonterm(self.logic, params))
         self.children.append(StrategyNonterm(self.logic))
 
-    def applySolveRule(self):
-        self.children.append(SolvingNonterm(self.logic))
+    def applySolveRule(self, params):
+        self.children.append(SolvingNonterm(self.logic)) 
 
-    def applyOrElseRule(self):
+    def applyOrElseRule(self, params):
         self.children.append(FailableStratNonterm(self.logic))
         self.children.append(StrategyNonterm(self.logic))
 
@@ -120,15 +119,13 @@ class DerivationAST():
         return not bool(self.findFstNonTerm())
 
     def legalActions(self):
-        if self.isTerminal():
-            return []
-        else:
-            return self.findFstNonTerm().legalActions()
+        if self.isTerminal(): return []
+        return self.findFstNonTerm().legalActions()
 
-    def applyRule(self, action):
+    def applyRule(self, action, params):
         assert (not self.isTerminal())
         node = self.findFstNonTerm()
-        node.applyRule(action)
+        node.applyRule(action, params)
 
     def clone(self):
         rootCopy = self.root.clone()

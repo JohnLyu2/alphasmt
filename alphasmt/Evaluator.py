@@ -21,7 +21,7 @@ class Z3Runner(threading.Thread):
         self.id = id
 
         if self.strategy is not None:
-            self.new_file_name = f"../tmp/tmp_{id}.smt2"
+            self.new_file_name = f"./tmp/tmp_{id}.smt2"
             self.tmp_file = open(self.new_file_name, 'w')
             with open(self.smt_file, 'r') as f:
                 for line in f:

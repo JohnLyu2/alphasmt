@@ -18,20 +18,16 @@ class StrategyGame():
     def legalActions(self):
         return self.strategyAST.legalActions()
 
-    def step(self, action):
-        gameCP = self.clone()
-        gameCP.strategyAST.applyRule(action)
-        return gameCP
+    def step(self, action, params):
+        self.strategyAST.applyRule(action, params)
 
     def rollout(self):
         assert(not self.isTerminal())
-        rolloutGame = self
-        while not rolloutGame.isTerminal():
-            actions = rolloutGame.legalActions()
+        while not self.isTerminal():
+            actions = self.legalActions()
             # action = random.choice(actions)
             action = actions[0]
-            rolloutGame = rolloutGame.step(action)
-        return rolloutGame
+            self.step(action, None)
 
     def getValue(self, database):
         assert (self.isTerminal())

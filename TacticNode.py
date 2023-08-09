@@ -1,24 +1,5 @@
 import math
 
-INIT_Q = 1
-C_UCT = 1
-
-# to-do: move to somewhere else later/change it into inputs
-TACTIC_PARAMS = {
-    "simplify": {
-        "elim_and": ["True","False"],
-		    "som": ["True","False"],
-		    "blast_distinct": ["True","False"],
-		    "flat": ["True","False"],
-		    "hi_div0": ["True","False"],
-		    "local_ctx": ["True","False"],
-		    "hoist_mul": ["True","False"]
-    },
-    "nla2bv": {
-        "nla2bv_max_bv_size": [i * 10 for i in range(11)]
-    }
-}
-
 class DerivationNode():
     def __init__(self, children, expand_type):
         if children is None:
@@ -36,11 +17,11 @@ class DerivationNode():
     def legalActions(self):
         return list(self.action_dict.keys())
 
-    def applyRule(self, action):
+    def applyRule(self, action, params):
         assert (self.isLeaf())
         assert (action in self.legalActions())
         func = self.action_dict[action]
-        func()
+        func(params)
         self.expandType = action
 
     def childrenClone(self):
@@ -54,53 +35,60 @@ class TacticTerminal(DerivationNode):
         super().__init__(None, None)
         self.name = name
         self.params = params
-        self._setParamMABs()
+        # self._setParamMABs()
 
     def __str__(self):
-        return self.name # to-do: parameter
+        if not self.params:
+          return self.name 
+        tacticWithParamsStr = " (using-params " + self.name
+        for param in self.params:
+            paramStr = " :" + param + " " + str(self.params[param])
+            tacticWithParamsStr += paramStr
+        tacticWithParamsStr += ")"
+        return tacticWithParamsStr
 
     def hasParams(self):
-        if self.params is None:
-            return False
-        return True
+        return not self.params
 
-    def _setParamMABs(self):
-        if not self.hasParams(): return
-        self.MABs = {}
-        self.selected = {}
-        self.totalVisit = 0
-        for param in self.params.keys():
-            MABdict = {}
-            for paramValue in self.params[param]:
-                MABdict[paramValue] = [0, INIT_Q] # (visit count, q estimation) 
-            self.MABs[param] = MABdict
-            self.selected[param] = None
+    # def _setParamMABs(self):
+    #     if not self.hasParams(): return
+    #     self.MABs = {}
+    #     self.selected = {}
+    #     self.totalVisit = 0
+    #     for param in self.params.keys():
+    #         MABdict = {}
+    #         for paramValue in self.params[param]:
+    #             MABdict[paramValue] = [0, INIT_Q] # (visit count, q estimation) 
+    #         self.MABs[param] = MABdict
+    #         self.selected[param] = None
 
-    def _uct(self, action_pair):
-        visitCount, qScore = action_pair
-        exploreScore = C_UCT * \
-            math.sqrt(math.log(self.totalVisit + 0.001) /
-                      (visitCount + 0.001))
-        return qScore + exploreScore
+    # def _uct(self, action_pair):
+    #     visitCount, qScore = action_pair
+    #     exploreScore = C_UCT * \
+    #         math.sqrt(math.log(self.totalVisit + 0.001) /
+    #                   (visitCount + 0.001))
+    #     return qScore + exploreScore
         
 
-    def _selectMAB(self, param):
-        MABdict = self.MABs[param]
-        _, selectValue = max((self._uct(pair), valueCanadidate)
-                                  for valueCanadidate, pair in MABdict.children.items())
-        return selectValue
+    # def _selectMAB(self, param):
+    #     MABdict = self.MABs[param]
+    #     _, selectValue = max((self._uct(pair), valueCanadidate)
+    #                               for valueCanadidate, pair in MABdict.items())
+    #     return selectValue
 
-    def selectMABs(self):
-        for param in self.params.keys():
-            selectV = self._selectMAB(param)
-            self.selected[param] = selectV
+    # def selectMABs(self):
+    #     for param in self.params.keys():
+    #         selectV = self._selectMAB(param)
+    #         self.selected[param] = selectV
 
     def backup(self, returnV):
         self.totalVisit += 1
         for param in self.params.keys():
             MABdict = self.MABs[param]
             selectedV = self.selected[param]
-            MABdict[selectedV]
+            MABdict[selectedV][0] += 1
+            MABdict[selectedV][1] = MABdict[selectedV][1] + STEP_ALPHA * (returnV - MABdict[selectedV][1]) # exponential recency-weighted average
+            self.selected[param] = None
 
     def isTerminal(self):
         return True
@@ -138,11 +126,11 @@ class PreprocessNonterm(DerivationNode):
         else: 
             raise Exception("unexpected smt logic")
 
-    def applyRule(self, action):
+    def applyRule(self, action, params):
         assert (self.isLeaf())
         assert (action in self.legalActions())
         tactic_name = self.action_dict[action]
-        params = TACTIC_PARAMS[tactic_name] if tactic_name in TACTIC_PARAMS else None
+        # params = TACTIC_PARAMS[tactic_name] if tactic_name in TACTIC_PARAMS else None
         selected = TacticTerminal(tactic_name, params)
         self.children.append(selected)
         self.expandType = action
@@ -174,11 +162,11 @@ class SolvingNonterm(DerivationNode):
             return [10]
         return list(self.action_dict.keys())
 
-    def applyRule(self, action):
+    def applyRule(self, action, params):
         assert (self.isLeaf())
         assert (action in self.legalActions())
         tactic_name = self.action_dict[action]
-        params = TACTIC_PARAMS[tactic_name] if tactic_name in TACTIC_PARAMS else None
+        # params = TACTIC_PARAMS[tactic_name] if tactic_name in TACTIC_PARAMS else None
         selected = TacticTerminal(tactic_name, params)
         self.children.append(selected)
         self.expandType = action
