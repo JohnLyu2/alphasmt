@@ -24,16 +24,18 @@ def main():
     # validate
     print("Validation Starts")
     valEvaluator = Z3StrategyEvaluator(VALID_SET)
+    valSize = valEvaluator.getBenchmarkSize()
     print("Strategy Candidates: ")
-    bestVScore = 0
+    bestPar2 = valSize * 36000 # change later
     bestStrat = None
     for strat in strat_candidates:
       print(strat)
       print(f"Training Score: {run.getStrategyStat(strat)}")
-      valScore = valEvaluator.evaluate(strat)
-      print(f"Validation Score: {valScore}\n")
-      if valScore > bestVScore:
-         bestVScore = valScore
+      valResTuple = valEvaluator.evaluate(strat)  
+      par2 = Z3StrategyEvaluator.caculateTimePar2(valResTuple, valSize, 1)
+      print(f"Validation: solved {valResTuple[0]} instances with rlimit {valResTuple[1]} and time {valResTuple[2]}; par2: {par2}")
+      if par2 < bestPar2:
+         bestPar2 = par2
          bestStrat = strat
     print(f"Best Strat: \n{bestStrat}")
 

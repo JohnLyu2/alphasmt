@@ -75,23 +75,18 @@ class Z3StrategyEvaluator():
         self.benchmarkDir = benchmark_dir
         self.benchmarkLst = [str(p) for p in sorted(
             list(pathlib.Path(self.benchmarkDir).rglob(f"*.smt2")))]
-        assert (len(self.benchmarkLst) > 0)
+        assert (self.getBenchmarkSize() > 0)
+    
+    def getBenchmarkSize(self):
+        return len(self.benchmarkLst)
 
-    def _par2Reward(self):  # to-do: add result check step
-        assert (len(self.results) == len(self.benchmarkLst))
-        maxPar2 = 2 * TIME_OUT * len(self.benchmarkLst)
-        evalPar2 = 0
-        for id in self.results:
-            # to-do: also check for result correctness
-            if self.results[id][0] == "sat" or self.results[id][0] == "unsat":
-                evalPar2 += self.results[id][2]
-            else:
-                evalPar2 += TIME_OUT * 2
-        return (maxPar2-evalPar2)/maxPar2
-
+    # returns a tuple (#solved, total rlimit, total time)
     def evaluate(self, strat_str):
-        self.results = {}
-        size = len(self.benchmarkLst)
+        results = {}
+        numSolved = 0
+        rlimitSolved = 0
+        timeSolved = 0
+        size = self.getBenchmarkSize()
         for i in range(0, size, BATCH_SIZE):
             batch_instance_ids = range(i, min(i+BATCH_SIZE, size))
             threads = []
@@ -105,6 +100,26 @@ class Z3StrategyEvaluator():
                 time_left = max(0, TIME_OUT - (time.time() - time_start))
                 task.join(time_left)
                 id, resTask, rlimitTask, timeTask = task.collect()
-                self.results[id] = (resTask, rlimitTask, timeTask)
-        reward = self._par2Reward()
-        return reward
+                results[id] = (resTask, rlimitTask, timeTask)
+        assert len(results) == size
+        for id in results:
+            # to-do: also check for result correctness
+            if results[id][0] == "sat" or results[id][0] == "unsat":
+                numSolved += 1
+                rlimitSolved += results[id][1]
+                timeSolved += results[id][2]
+        return (numSolved, rlimitSolved, timeSolved)
+    
+    @staticmethod
+    def caculateTimePar2(res_tuple, total_instnace, timeout):
+        numSolved, rlimitSum, timeSum = res_tuple
+        numUnsolved = total_instnace - numSolved
+        return timeSum + numUnsolved * timeout * 2
+
+    # add argument to select type of reward; now scaled time par2
+    def getReward(self, strat_str):
+        res_tuple = self.evaluate(strat_str)
+        size = self.getBenchmarkSize()
+        par2 = Z3StrategyEvaluator.caculateTimePar2(res_tuple, size, TIME_OUT)
+        maxPar2 = 2 * TIME_OUT * size
+        return float(maxPar2-par2)/maxPar2

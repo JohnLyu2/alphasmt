@@ -3,8 +3,10 @@ import copy
 from alphasmt.Environment import StrategyGame
 
 INIT_Q = 1
-C_UCT = 1
+C_UCB = 0.5
 STEP_ALPHA = 0.3
+
+C_UCT= 0.3
 
 # to-do: move to somewhere else later/change it into inputs
 TACTIC_PARAMS = {
@@ -61,7 +63,7 @@ class MCTSNode():
     def _uct(self, action_pair):
         visitCount, qScore = action_pair
         # print("Q: " + str(qScore))
-        exploreScore = C_UCT * \
+        exploreScore = C_UCB * \
             math.sqrt(math.log(self.visitCount + 1) / # check ucb 1
                       (visitCount + 0.001))
         # print("Exp: " + str(exploreScore))
@@ -101,7 +103,7 @@ class MCTS_RUN():
         # to-do: pack some into config
         self.numSimulations = num_simulations
         self.discount = 1  # now set to 1
-        self.c_uct = 1
+        self.c_uct = C_UCT #
         if not root: root = MCTSNode()
         self.root = root
         self.trainingSet = training_set

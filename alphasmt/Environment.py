@@ -34,7 +34,7 @@ class StrategyGame():
         stratStr = str(self.strategyAST)
         if stratStr in database:  # does not account for nondeterministism now
             return database[stratStr]
-        reward = self.simulator.evaluate(stratStr)
+        reward = self.simulator.getReward(stratStr)
         database[stratStr] = reward
         return reward
 
