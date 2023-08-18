@@ -19,9 +19,6 @@ import functools
 print = functools.partial(print, flush=True)
 
 def main():
-    log_folder = "experiments/results/out-{date:%Y-%m-%d_%H-%M-%S}/".format(date=datetime.datetime.now())
-    assert(not os.path.exists(log_folder))
-    os.makedirs(log_folder)
     parser = argparse.ArgumentParser()
     parser.add_argument('json_config', type=str, help='The experiment configuration file in json')
     configJsonPath = parser.parse_args()
@@ -34,10 +31,17 @@ def main():
     sim_num = config['simulation_number']
     timeout = config['timeout']
     batchSize = config['batch_size']
+    c_uct =  config['c_uct'] # for mcts select
+    c_ucb =  config['c_ucb'] # for parameter mab
+    mab_alpha =  config['mab_alpha'] # for parameter mab
+
+    log_folder = f"experiments/results/out-{datetime.datetime.now():%Y-%m-%d_%H-%M-%S}/"
+    assert(not os.path.exists(log_folder))
+    os.makedirs(log_folder)
 
     # train
     log.info("MCTS Simulations Start")
-    run = MCTS_RUN(sim_num, train_path, logic, timeout, batchSize, log_folder)
+    run = MCTS_RUN(sim_num, train_path, logic, timeout, batchSize, log_folder, c_uct, c_ucb, mab_alpha)
     run.start()
     strat_candidates = run.bestNStrategies(num_val_strat)
     log.info(f"Simulations done. {num_val_strat} strategies are selected.")

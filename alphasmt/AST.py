@@ -53,7 +53,8 @@ class StrategyNonterm(DerivationNode):
         self.action_dict = {
             0: self.applySolveRule,  # <Strategy> := <SolvingTactic>
             1: self.applyThenRule,   # <Strategy> := (then <PreprocessTactic> <Strategy>)
-            2: self.applyTimeoutRule  # <Strategy> := (or-else (try-for <Strategy>(QF_NIA/BV) <timeout>) <Strategy>(QF_NIA/BV))
+            2: self.applyTimeoutRule,  # <Strategy> := (or-else (try-for <Strategy>(QF_NIA/BV) <timeout>) <Strategy>(QF_NIA/BV))
+            5: self.apply2BVRule  # <Strategy>(QF_NIA) := (or-else (then nla2bv <Strategy>(BV)) <Strategy>(QF_NIA))
         }
 
     def __str__(self):
@@ -69,6 +70,9 @@ class StrategyNonterm(DerivationNode):
         elif self.expandType == 2:
             returnStr = f"(or-else (try-for {self.children[0]} {self.children[0].timeout * 1000}) {self.children[1]})"
             return returnStr
+        elif self.expandType == 5:
+            returnStr = f"(or-else (then {self.children[0]} {self.children[1]}) {self.children[2]})"
+            return returnStr
 
     def isTerminal(self):
         return False
@@ -77,9 +81,8 @@ class StrategyNonterm(DerivationNode):
         actions = [0, 1]
         if self.timeoutStatus >= 0 and self.timeoutStatus < MAX_TIMEOUT_STRAT:
             actions.append(2)
-        
-#         if self.logic == "BV":
-#             return [6]
+        if self.logic == "QF_NIA":
+            actions.append(5)
         return actions
 
     def applyThenRule(self, params):
@@ -96,6 +99,11 @@ class StrategyNonterm(DerivationNode):
         assert(remainTimeout > 0)
         self.children.append(StrategyNonterm(self.logic, tryTimeout, -1, self))
         self.children.append(StrategyNonterm(self.logic, remainTimeout, self.timeoutStatus+1, self))
+
+    def apply2BVRule(self, params):
+        self.children.append(TacticTerminal("nla2bv", params, self))
+        self.children.append(StrategyNonterm("BV", self.timeout, self.timeoutStatus, self)) # use <strategy> but with different tactic sets
+        self.children.append(StrategyNonterm(self.logic, self.timeout, self.timeoutStatus, self))
 
     # def clone(self):
     #     childrenCp = self.childrenClone()

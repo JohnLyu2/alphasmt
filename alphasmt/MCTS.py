@@ -10,10 +10,6 @@ log_handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(message)
 log.addHandler(log_handler)
 
 INIT_Q = 1
-C_UCB = 0.1
-STEP_ALPHA = 0.3
-
-C_UCT = 0.3
 
 # to-do: move to somewhere else later/change it into inputs
 PARAMS = {
@@ -33,13 +29,15 @@ PARAMS = {
     },
     # "nla2bv" 
     5: {
-        "nla2bv_max_bv_size": [i * 10 for i in range(11)]
+        "nla2bv_max_bv_size": [i * 20 for i in range(6)]
     }
 }
 
 class MCTSNode():
-    def __init__(self, logger, action_history=[]):
+    def __init__(self, logger, c_ucb, alpha, action_history=[]):
         # self.envn = envn
+        self.c_ucb = c_ucb
+        self.alpha = alpha
         self.visitCount = 0
         self.actionHistory = action_history # 
         self.valueLst = []
@@ -72,7 +70,7 @@ class MCTSNode():
     # the argument action is only for log
     def _ucb(self, action_pair, action):
         visitCount, qScore = action_pair
-        exploreScore = C_UCB * \
+        exploreScore = self.c_ucb * \
             math.sqrt(math.log(self.visitCount + 1) / # check ucb 1
                       (visitCount + 0.001))
         ucb = qScore + exploreScore
@@ -106,7 +104,7 @@ class MCTSNode():
             MABdict = self.MABs[param]
             selectedV = self.selected[param]
             MABdict[selectedV][0] += 1
-            MABdict[selectedV][1] = MABdict[selectedV][1] + STEP_ALPHA * (returnV - MABdict[selectedV][1]) # exponential recency-weighted average
+            MABdict[selectedV][1] = MABdict[selectedV][1] + self.alpha * (returnV - MABdict[selectedV][1]) # exponential recency-weighted average
             self.selected[param] = None
 
 
@@ -119,11 +117,13 @@ class MCTSNode():
 
 
 class MCTS_RUN():
-    def __init__(self, num_simulations, training_set, logic, timeout, batch_size, log_folder, root = None):
+    def __init__(self, num_simulations, training_set, logic, timeout, batch_size, log_folder, c_uct, c_ucb, alpha, root = None):
         # to-do: pack some into config
         self.numSimulations = num_simulations
         self.discount = 1  # now set to 1
-        self.c_uct = C_UCT 
+        self.c_uct = c_uct
+        self.c_ucb = c_ucb
+        self.alpha = alpha
         self.trainingSet = training_set
         self.logic = logic
         self.timeout = timeout
@@ -133,7 +133,7 @@ class MCTS_RUN():
         self.sim_log.setLevel(logging.DEBUG)
         simlog_handler = logging.FileHandler(f"{log_folder}/mcts_simulations.log")
         self.sim_log.addHandler(simlog_handler)
-        if not root: root = MCTSNode(self.sim_log)
+        if not root: root = MCTSNode(self.sim_log, c_ucb, alpha)
         self.root = root
 
     def _uct(self, childNode, parentNode, action):
@@ -164,13 +164,13 @@ class MCTS_RUN():
         return node, searchPath
 
     @staticmethod
-    def _expandNode(node, actions, reward, logger):
+    def _expandNode(node, actions, reward, c_ucb, alpha, logger):
         node.reward = reward
         for action in actions:
             # childEnvn = node.envn.step(action)
             history = copy.deepcopy(node.actionHistory)
             history.append(action)
-            node.children[action] = MCTSNode(logger, history)
+            node.children[action] = MCTSNode(logger, c_ucb, alpha, history)
 
     def _rollout(self):
         self.env.rollout()
@@ -196,7 +196,7 @@ class MCTS_RUN():
         else:
             actions = self.env.legalActions()
             # now reward is always 0 at each step
-            MCTS_RUN._expandNode(selectNode, actions, 0, self.sim_log)
+            MCTS_RUN._expandNode(selectNode, actions, 0, self.c_ucb, self.alpha, self.sim_log)
             self._rollout()
             self.sim_log.info("Rollout Strategy: " + str(self.env))
             value = self.env.getValue(self.resDatabase)

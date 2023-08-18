@@ -83,14 +83,14 @@ class TacticTerminal(DerivationNode):
     #         selectV = self._selectMAB(param)
     #         self.selected[param] = selectV
 
-    def backup(self, returnV):
-        self.totalVisit += 1
-        for param in self.params.keys():
-            MABdict = self.MABs[param]
-            selectedV = self.selected[param]
-            MABdict[selectedV][0] += 1
-            MABdict[selectedV][1] = MABdict[selectedV][1] + STEP_ALPHA * (returnV - MABdict[selectedV][1]) # exponential recency-weighted average
-            self.selected[param] = None
+    # def backup(self, returnV):
+    #     self.totalVisit += 1
+    #     for param in self.params.keys():
+    #         MABdict = self.MABs[param]
+    #         selectedV = self.selected[param]
+    #         MABdict[selectedV][0] += 1
+    #         MABdict[selectedV][1] = MABdict[selectedV][1] + STEP_ALPHA * (returnV - MABdict[selectedV][1]) # exponential recency-weighted average
+    #         self.selected[param] = None
 
     def isTerminal(self):
         return True
