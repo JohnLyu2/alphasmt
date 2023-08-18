@@ -1,55 +1,59 @@
-from TacticNode import *
+from alphasmt.TacticNode import *
 
-class FailableStratNonterm(DerivationNode):
-    def __init__(self, logic, children = None, expand_type = None):
-        super().__init__(children, expand_type)
-        self.logic = logic
-        self.action_dict = {
-            5: self.applyBVRule, # <FailableStrategy>(QF_NIA) := (then nla2bv <Strategy>(BV))
-            6: self.applyTryRule # <FailableStrategy>(QF_NIA/BV) := (try-for <Strategy>(QF_NIA/BV) <timeout>)
-        }
 
-    def __str__(self):
-        if self.isLeaf():
-            return f"<FailableStrategy>({self.logic})"
-        if self.expandType == 5:
-            returnStr = "(then " + \
-                str(self.children[0]) + " " + str(self.children[1]) + ")"
-            return returnStr
-        if self.expandType == 6:
-            returnStr = "(try-for " + \
-                str(self.children[0]) + " " + "300" + ")" # to-do: make it modularize later
-            return returnStr
+MAX_TIMEOUT_STRAT = 3
+# class FailableStratNonterm(DerivationNode):
+#     def __init__(self, logic, parent, children = None, expand_type = None):
+#         super().__init__(children, expand_type, parent)
+#         self.logic = logic
+#         self.action_dict = {
+#             5: self.applyBVRule, # <FailableStrategy>(QF_NIA) := (then nla2bv <Strategy>(BV))
+#             6: self.applyTryRule # <FailableStrategy>(QF_NIA/BV) := (try-for <Strategy>(QF_NIA/BV) <timeout>)
+#         }
 
-    def isTerminal(self):
-        return False
+#     def __str__(self):
+#         if self.isLeaf():
+#             return f"<FailableStrategy>({self.logic})"
+#         if self.expandType == 5:
+#             returnStr = "(then " + \
+#                 str(self.children[0]) + " " + str(self.children[1]) + ")"
+#             return returnStr
+#         if self.expandType == 6:
+#             returnStr = "(try-for " + \
+#                 str(self.children[0]) + " " + "300" + ")" # to-do: make it modularize later
+#             return returnStr
 
-    def legalActions(self):
-        if self.logic == "BV":
-            return [6]
-        return list(self.action_dict.keys())
+#     def isTerminal(self):
+#         return False
 
-    def applyBVRule(self, params):
-        # params = TACTIC_PARAMS[tactic_name] if tactic_name in TACTIC_PARAMS else None
-        self.children.append(TacticTerminal("nla2bv", params))
-        self.children.append(StrategyNonterm("BV")) # use <strategy> but with different tactic sets
+#     def legalActions(self):
+#         if self.logic == "BV":
+#             return [6]
+#         return list(self.action_dict.keys())
 
-    def applyTryRule(self, params):
-        self.children.append(StrategyNonterm(self.logic))
+#     def applyBVRule(self, params):
+#         # params = TACTIC_PARAMS[tactic_name] if tactic_name in TACTIC_PARAMS else None
+#         self.children.append(TacticTerminal("nla2bv", params, self))
+#         self.children.append(StrategyNonterm("BV", self)) # use <strategy> but with different tactic sets
 
-    def clone(self):
-        childrenCp = self.childrenClone()
-        return FailableStratNonterm(self.logic, childrenCp, self.expandType)
+#     def applyTryRule(self, params):
+#         self.children.append(StrategyNonterm(self.logic, self))
+
+    # def clone(self):
+    #     childrenCp = self.childrenClone()
+    #     return FailableStratNonterm(self.logic, childrenCp, self.expandType)
 
 
 class StrategyNonterm(DerivationNode):
-    def __init__(self, logic, children = None, expand_type = None):
-        super().__init__(children, expand_type)
+    def __init__(self, logic, timeout, timeout_status, parent, children = None, expand_type = None):
+        super().__init__(children, expand_type, parent)
         self.logic = logic
+        self.timeout = timeout
+        self.timeoutStatus = timeout_status # -1: itself a timed strategy; otherwise: number of timed strategies already tried beforehand
         self.action_dict = {
             0: self.applySolveRule,  # <Strategy> := <SolvingTactic>
             1: self.applyThenRule,   # <Strategy> := (then <PreprocessTactic> <Strategy>)
-            2: self.applyOrElseRule  # <Strategy> := (or-else <FailableStrategy> <Strategy>)
+            2: self.applyTimeoutRule  # <Strategy> := (or-else (try-for <Strategy>(QF_NIA/BV) <timeout>) <Strategy>(QF_NIA/BV))
         }
 
     def __str__(self):
@@ -63,34 +67,46 @@ class StrategyNonterm(DerivationNode):
         elif self.expandType == 0:
             return str(self.children[0])
         elif self.expandType == 2:
-            returnStr = "(or-else " + \
-                str(self.children[0]) + " " + str(self.children[1]) + ")"
+            returnStr = f"(or-else (try-for {self.children[0]} {self.children[0].timeout * 1000}) {self.children[1]})"
             return returnStr
 
     def isTerminal(self):
         return False
 
+    def legalActions(self):
+        actions = [0, 1]
+        if self.timeoutStatus >= 0 and self.timeoutStatus < MAX_TIMEOUT_STRAT:
+            actions.append(2)
+        
+#         if self.logic == "BV":
+#             return [6]
+        return actions
+
     def applyThenRule(self, params):
-        self.children.append(PreprocessNonterm(self.logic, params))
-        self.children.append(StrategyNonterm(self.logic))
+        self.children.append(PreprocessNonterm(self.logic, self))
+        self.children.append(StrategyNonterm(self.logic, self.timeout, self.timeoutStatus, self))
 
     def applySolveRule(self, params):
-        self.children.append(SolvingNonterm(self.logic)) 
+        self.children.append(SolvingNonterm(self.logic, self)) 
 
-    def applyOrElseRule(self, params):
-        self.children.append(FailableStratNonterm(self.logic))
-        self.children.append(StrategyNonterm(self.logic))
+    def applyTimeoutRule(self, params):
+        assert(self.timeoutStatus != -1 and self.timeoutStatus < MAX_TIMEOUT_STRAT)
+        tryTimeout = params["timeout"]
+        remainTimeout = self.timeout - tryTimeout
+        assert(remainTimeout > 0)
+        self.children.append(StrategyNonterm(self.logic, tryTimeout, -1, self))
+        self.children.append(StrategyNonterm(self.logic, remainTimeout, self.timeoutStatus+1, self))
 
-    def clone(self):
-        childrenCp = self.childrenClone()
-        return StrategyNonterm(self.logic, childrenCp, self.expandType)
+    # def clone(self):
+    #     childrenCp = self.childrenClone()
+    #     return StrategyNonterm(self.logic, childrenCp, self.expandType)
     
 # CFG derivation tree
 class DerivationAST():
-    def __init__(self, logic, root = None):
+    def __init__(self, logic, timeout, root = None):
         self.logic = logic
         if root is None:
-            self.root = StrategyNonterm(logic)
+            self.root = StrategyNonterm(logic, timeout, 0, None)
         else:
             self.root = root
 
@@ -127,6 +143,10 @@ class DerivationAST():
         node = self.findFstNonTerm()
         node.applyRule(action, params)
 
-    def clone(self):
-        rootCopy = self.root.clone()
-        return DerivationAST(self.logic, rootCopy)
+    def getRemainTime(self):
+        assert (2 in self.legalActions())
+        return self.findFstNonTerm().timeout
+
+    # def clone(self):
+    #     rootCopy = self.root.clone()
+    #     return DerivationAST(self.logic, rootCopy)

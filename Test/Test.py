@@ -31,24 +31,24 @@ def main():
     # print(strat_cp1)
     # assert (newStrat.isTerminal())
 
-    # # Evaluator tests
-    # print("\nEvaluator tests")
-    # eval1 = Z3StrategyEvaluator(
-    #     "/Users/zhengyanglumacmini/Desktop/AlphaSMT/Experiments/Benchmarks/test1")
-    # print(eval1.benchmarkLst)
-    # print(eval1.evaluate('smt'))
-    # print(eval1.evaluate('(try-for smt 300)'))
+    # Evaluator tests
+    print("\nEvaluator tests")
+    eval1 = Z3StrategyEvaluator(
+        "/Users/zhengyanglumacmini/Desktop/AlphaSMT/Experiments/Benchmarks/test1", 1, 2)
+    print(eval1.benchmarkLst)
+    print(eval1.evaluate('smt'))
+    print(eval1.evaluate('(or-else (try-for (or-else (try-for smt 300) (or-else (then nla2bv smt) qfnra-nlsat)) 300) smt)'))
     # print(eval1.results)
 
     # MCTS tests
-    print("\nCFG AST tests")
-    root = MCTSNode()
-    run = MCTS_RUN(30, root, "/Users/zhengyanglumacmini/Desktop/AlphaSMT/Experiments/Benchmarks/test1", "QF_NIA")
-    run.start()
-    print(run.root.valueLst)
-    print(run.root.value())
-    print(run)
-    print(run.bestNStrategies(4))
+    # print("\nCFG AST tests")
+    # root = MCTSNode()
+    # run = MCTS_RUN(30, root, "/Users/zhengyanglumacmini/Desktop/AlphaSMT/Experiments/Benchmarks/test1", "QF_NIA")
+    # run.start()
+    # print(run.root.valueLst)
+    # print(run.root.value())
+    # print(run)
+    # print(run.bestNStrategies(4))
 
 
 if __name__ == "__main__":

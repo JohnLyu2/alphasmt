@@ -5,15 +5,18 @@ from alphasmt.Evaluator import Z3StrategyEvaluator
 
 
 class StrategyGame():
-    def __init__(self, training_set, logic):
-        self.strategyAST = DerivationAST(logic)
-        self.simulator = Z3StrategyEvaluator(training_set) # shallow copy for clone
+    def __init__(self, training_set, logic, timeout, batch_size):
+        self.strategyAST = DerivationAST(logic, timeout)
+        self.simulator = Z3StrategyEvaluator(training_set, timeout, batch_size) # shallow copy for clone
 
     def __str__(self) -> str:
         return str(self.strategyAST)
 
     def isTerminal(self):
         return self.strategyAST.isTerminal()
+
+    def getRemainTime(self):
+        return self.strategyAST.getRemainTime()
 
     def legalActions(self):
         return self.strategyAST.legalActions()

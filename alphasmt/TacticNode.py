@@ -1,12 +1,13 @@
 import math
 
 class DerivationNode():
-    def __init__(self, children, expand_type):
+    def __init__(self, children, expand_type, parent): # may not need parent
         if children is None:
             self.children = []
         else:
             self.children = children
         self.expandType = expand_type
+        self.parent = parent
             
     # isTerminal and isLeaf is different as a tree may not be complete
     def isLeaf(self):
@@ -14,8 +15,8 @@ class DerivationNode():
             return False
         return True
 
-    def legalActions(self):
-        return list(self.action_dict.keys())
+    # def legalActions(self):
+    #     return list(self.action_dict.keys())
 
     def applyRule(self, action, params):
         assert (self.isLeaf())
@@ -24,15 +25,16 @@ class DerivationNode():
         func(params)
         self.expandType = action
 
-    def childrenClone(self):
-        chldCpLst = []
-        for child in self.children:
-            chldCpLst.append(child.clone())
-        return chldCpLst
+    # because of the added self.parent, old clone codes cannot be used
+    # def childrenClone(self):
+    #     chldCpLst = []
+    #     for child in self.children:
+    #         chldCpLst.append(child.clone())
+    #     return chldCpLst
 
 class TacticTerminal(DerivationNode):
-    def __init__(self, name, params): # tactic terminals do not have children 
-        super().__init__(None, None)
+    def __init__(self, name, params, parent): # tactic terminals do not have children 
+        super().__init__(None, None, parent)
         self.name = name
         self.params = params
         # self._setParamMABs()
@@ -93,12 +95,12 @@ class TacticTerminal(DerivationNode):
     def isTerminal(self):
         return True
 
-    def clone(self):
-        return TacticTerminal(self.name, self.params) # name and params are not modified; no deep copy here
+    # def clone(self):
+    #     return TacticTerminal(self.name, self.params) # name and params are not modified; no deep copy here
 
 class PreprocessNonterm(DerivationNode):
-    def __init__(self, logic, children = None, expand_type = None):
-        super().__init__(children, expand_type)
+    def __init__(self, logic, parent, children = None, expand_type = None):
+        super().__init__(children, expand_type, parent)
         self.logic = logic
         self.action_dict = {
             20: "simplify", 
@@ -131,18 +133,18 @@ class PreprocessNonterm(DerivationNode):
         assert (action in self.legalActions())
         tactic_name = self.action_dict[action]
         # params = TACTIC_PARAMS[tactic_name] if tactic_name in TACTIC_PARAMS else None
-        selected = TacticTerminal(tactic_name, params)
+        selected = TacticTerminal(tactic_name, params, self)
         self.children.append(selected)
         self.expandType = action
 
-    def clone(self):
-        childrenCp = self.childrenClone()
-        return PreprocessNonterm(self.logic, childrenCp, self.expandType)
+    # def clone(self):
+    #     childrenCp = self.childrenClone()
+    #     return PreprocessNonterm(self.logic, childrenCp, self.expandType)
 
 
 class SolvingNonterm(DerivationNode):
-    def __init__(self, logic, children = None, expand_type = None):
-        super().__init__(children, expand_type)
+    def __init__(self, logic, parent, children = None, expand_type = None):
+        super().__init__(children, expand_type, parent)
         self.logic = logic
         self.action_dict = {
             10: "smt",
@@ -167,10 +169,10 @@ class SolvingNonterm(DerivationNode):
         assert (action in self.legalActions())
         tactic_name = self.action_dict[action]
         # params = TACTIC_PARAMS[tactic_name] if tactic_name in TACTIC_PARAMS else None
-        selected = TacticTerminal(tactic_name, params)
+        selected = TacticTerminal(tactic_name, params, self)
         self.children.append(selected)
         self.expandType = action
 
-    def clone(self):
-        childrenCp = self.childrenClone()
-        return SolvingNonterm(self.logic, childrenCp, self.expandType)
+    # def clone(self):
+    #     childrenCp = self.childrenClone()
+    #     return SolvingNonterm(self.logic, childrenCp, self.expandType)
