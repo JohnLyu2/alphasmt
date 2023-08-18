@@ -18,8 +18,8 @@ class StrategyGame():
     def getRemainTime(self):
         return self.strategyAST.getRemainTime()
 
-    def legalActions(self):
-        return self.strategyAST.legalActions()
+    def legalActions(self, rollout = False):
+        return self.strategyAST.legalActions(rollout)
 
     def step(self, action, params):
         self.strategyAST.applyRule(action, params)
@@ -27,9 +27,9 @@ class StrategyGame():
     def rollout(self):
         assert(not self.isTerminal())
         while not self.isTerminal():
-            actions = self.legalActions()
-            # action = random.choice(actions)
-            action = actions[0]
+            actions = self.legalActions(rollout = True)
+            action = random.choice(actions)
+            # action = actions[0]
             self.step(action, None)
 
     def getValue(self, database):

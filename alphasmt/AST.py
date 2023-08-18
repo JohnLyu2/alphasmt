@@ -77,9 +77,9 @@ class StrategyNonterm(DerivationNode):
     def isTerminal(self):
         return False
 
-    def legalActions(self):
+    def legalActions(self, rollout = False):
         actions = [0, 1]
-        if self.timeoutStatus >= 0 and self.timeoutStatus < MAX_TIMEOUT_STRAT:
+        if (not rollout) and self.timeoutStatus >= 0 and self.timeoutStatus < MAX_TIMEOUT_STRAT:
             actions.append(2)
         if self.logic == "QF_NIA":
             actions.append(5)
@@ -142,9 +142,9 @@ class DerivationAST():
     def isTerminal(self):
         return not bool(self.findFstNonTerm())
 
-    def legalActions(self):
+    def legalActions(self, rollout = False):
         if self.isTerminal(): return []
-        return self.findFstNonTerm().legalActions()
+        return self.findFstNonTerm().legalActions(rollout)
 
     def applyRule(self, action, params):
         assert (not self.isTerminal())

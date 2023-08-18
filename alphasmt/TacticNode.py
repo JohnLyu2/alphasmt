@@ -120,7 +120,7 @@ class PreprocessNonterm(DerivationNode):
     def isTerminal(self):
         return False
 
-    def legalActions(self): # hardcoded now
+    def legalActions(self, rollout = False): # hardcoded now
         if self.logic == "BV":
             return list(self.action_dict.keys())
         elif self.logic == "QF_NIA":
@@ -159,7 +159,7 @@ class SolvingNonterm(DerivationNode):
     def isTerminal(self):
         return False
 
-    def legalActions(self):
+    def legalActions(self, rollout = False):
         if self.logic == "BV":
             return [10]
         return list(self.action_dict.keys())

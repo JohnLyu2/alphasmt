@@ -17,7 +17,20 @@
 
 <timeout> := 2 | 4 | 8 | 16
 
+Tactic Parameters
 
+"simplify": { 
+        "elim_and": ["true","false"],
+        "som": ["true","false"],
+        "blast_distinct": ["true","false"],
+        "flat": ["true","false"],
+        "hi_div0": ["true","false"],
+        "local_ctx": ["true","false"],
+        "hoist_mul": ["true","false"]
+    },
+"nla2bv" : {
+        "nla2bv_max_bv_size": [i * 20 for i in range(6)]
+    }
 
 Additional Rules
 1. no nested timeout
