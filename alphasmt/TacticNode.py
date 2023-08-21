@@ -8,7 +8,7 @@ class DerivationNode():
             self.children = children
         self.expandType = expand_type
         self.parent = parent
-            
+        
     # isTerminal and isLeaf is different as a tree may not be complete
     def isLeaf(self):
         if len(self.children):
@@ -108,8 +108,18 @@ class PreprocessNonterm(DerivationNode):
             22: "ctx-simplify",
             23: "elim-uncnstr",
             24: "solve-eqs",
-            25: "max-bv-sharing", # BV only
-            26: "bit-blast" # BV only
+            # 25 - 31 are BV only
+            25: "purify-arith",
+            26: "max-bv-sharing",
+            27: "aig",
+            28: "reduce-bv-size",
+            29: "ackermannize_bv",
+            30: "bit-blast", 
+            31: "bv1-blast",
+            # 32 - 34 are BV only
+            32: "lia2card",
+            33: "card2bv",
+            34: "cofactor-term-ite"
         }
 
     def __str__(self):
@@ -120,11 +130,15 @@ class PreprocessNonterm(DerivationNode):
     def isTerminal(self):
         return False
 
-    def legalActions(self, rollout = False): # hardcoded now
+    def legalActions(self, rollout = False):
+        actions = [i for i in range(20,25)]
         if self.logic == "BV":
-            return list(self.action_dict.keys())
+            upbound = 30 if rollout else 31
+            return actions + [i for i in range(25,upbound)]
         elif self.logic == "QF_NIA":
-            return [i for i in range(20,25)]
+            return actions + [i for i in range(32,35)]
+        elif self.logic == "QF_NRA":
+            return actions
         else: 
             raise Exception("unexpected smt logic")
 

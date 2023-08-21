@@ -25,11 +25,23 @@ PARAMS = {
         "flat": ["true","false"],
         "hi_div0": ["true","false"],
         "local_ctx": ["true","false"],
-        "hoist_mul": ["true","false"]
+        "hoist_mul": ["true","false"],
+        "push_ite_bv": ["true","false"],
+        "pull_cheap_ite": ["true","false"]
+    },
+    # "propagate-values"
+    21: {
+        "push_ite_bv": ["true","false"]
     },
     # "nla2bv" 
     5: {
-        "nla2bv_max_bv_size": [i * 20 for i in range(6)]
+        "nla2bv_max_bv_size": [4, 8, 16, 32, 64, 128]
+    },
+    # "qfnra-nlsat" 
+    11: {
+        "inline_vars": ["true","false"],
+        "factor": ["true","false"],
+        "seed": [i * 5 for i in range(6)]
     }
 }
 
@@ -154,13 +166,26 @@ class MCTS_RUN():
         while node.isExpanded() and not self.env.isTerminal():
             self.sim_log.debug(f"\n  Select at {node}")
             # may add randomness when the UCTs are the same
-            _, action, node = max((self._uct(childNode, node, action), action, childNode)
-                                  for action, childNode in node.children.items())
-            self.sim_log.debug(f"  Selected action {action}")
-            remainTime = self.env.getRemainTime() if action == 2 else None
+
+            # select in the order as in the list if the same UCT values; put more promising/safer actions earlier in legalActions()
+            selected = None 
+            bestUCT = -1
+            nextNode = None 
+            for action, childNode in node.children.items():
+                uct = self._uct(childNode, node, action)
+                if uct > bestUCT:
+                    selected = action
+                    bestUCT = uct
+                    nextNode = childNode
+            assert(bestUCT >= 0)
+            node = nextNode
+            # _, action, node = max((self._uct(childNode, node, action), action, childNode)
+            #                       for action, childNode in node.children.items()) 
+            self.sim_log.debug(f"  Selected action {selected}")
+            remainTime = self.env.getRemainTime() if selected == 2 else None
             params = node.selectMABs(remainTime) if node.hasParamMABs() else None
             searchPath.append(node)
-            self.env.step(action, params)
+            self.env.step(selected, params)
         return node, searchPath
 
     @staticmethod

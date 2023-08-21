@@ -77,7 +77,7 @@ class Z3StrategyEvaluator():
         self.benchmarkLst = [str(p) for p in sorted(
             list(pathlib.Path(self.benchmarkDir).rglob(f"*.smt2")))]
         assert (self.getBenchmarkSize() > 0)
-        self.timeout = int(timeout / 10) # now for testing
+        self.timeout = int(timeout)
         self.batchSize = batch_size
     
     def getBenchmarkSize(self):

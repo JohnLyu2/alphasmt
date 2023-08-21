@@ -77,11 +77,15 @@ class StrategyNonterm(DerivationNode):
     def isTerminal(self):
         return False
 
+    def _getBVPreprocessActions(self):
+        assert(self.logic == "BV")
+        
+
     def legalActions(self, rollout = False):
         actions = [0, 1]
         if (not rollout) and self.timeoutStatus >= 0 and self.timeoutStatus < MAX_TIMEOUT_STRAT:
             actions.append(2)
-        if self.logic == "QF_NIA":
+        if (not rollout) and (self.logic == "QF_NIA" or self.logic == "QF_NRA"):
             actions.append(5)
         return actions
 
