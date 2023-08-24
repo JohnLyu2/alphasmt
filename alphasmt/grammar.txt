@@ -3,9 +3,13 @@
 <Strategy>(QF_NIA/QF_NRA/BV) := (or-else (try-for <Strategy>(QF_NIA/QF_NRA/BV) <timeout>) <Strategy>(QF_NIA/QF_NRA/BV))  [2]
 
 <Strategy>(QF_NIA/QF_NRA) := (or-else (then nla2bv <Strategy>(BV)) <Strategy>(QF_NIA/QF_NRA))  [5]
+<Strategy>(BV) := (if is-qfbv-eq (then bv1-blast <Strategy>(BV) <Strategy>(BV)) [6]
+
+<Strategy>(BV) := (then simplify bit-blast <Strategy>(SAT)) [7] (unimplemented)
 
 <SolvingTactic>(QF_NIA/QF_NRA/BV) := smt  [10]
 <SolvingTactic>(QF_NIA/QF_NRA) := qfnra-nlsat  [11]
+
 <SolvingTactic>(BV) := sat  [12] (unimplemented)
 
 <PreprocessTactic>(QF_NIA/QF_NRA/BV) := simplify [20]
@@ -18,8 +22,11 @@
 <PreprocessTactic>(BV) := aig [27]
 <PreprocessTactic>(BV) := reduce-bv-size [28]
 <PreprocessTactic>(BV) := ackermannize_bv [29]
+
 <PreprocessTactic>(BV) := bit-blast [30]
-<PreprocessTactic>(BV) := bv1-blast [31] (not yet)
+
+
+
 <PreprocessTactic>(QF_NIA) := lia2card [32]
 <PreprocessTactic>(QF_NIA) := card2bv [33]
 <PreprocessTactic>(QF_NIA) := cofactor-term-ite [34]
@@ -28,7 +35,7 @@
 
 Tactic Parameters
 
-"simplify": { 
+"simplify": {
         "elim_and": ["true","false"],
         "som": ["true","false"],
         "blast_distinct": ["true","false"],
@@ -39,7 +46,7 @@ Tactic Parameters
         "push_ite_bv": ["true","false"],
         "pull_cheap_ite": ["true","false"]
     }
-"propagate-values": { 
+"propagate-values": {
         "push_ite_bv": ["true","false"]
     }
 "nla2bv": {

@@ -2,12 +2,12 @@
   "logic": "QF_NIA",
   "training_dir": "/Users/zhengyanglumacmini/Desktop/AlphaSMT/Experiments/Benchmarks/test1",
   "validation_dir": "/Users/zhengyanglumacmini/Desktop/AlphaSMT/Experiments/Benchmarks/test1",
-  "simulation_number": 5000,
+  "simulation_number": 100,
   "strategy_2b_validated": 3,
   "timeout": 24,
   "batch_size": 2,
   "c_uct": 0.5,
   "c_ucb": 0.2,
-  "mab_alpha": 0.3
-
+  "mab_alpha": 0.3,
+  "testing_factor": 24
 }

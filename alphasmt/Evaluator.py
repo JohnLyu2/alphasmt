@@ -72,12 +72,13 @@ class Z3Runner(threading.Thread):
         return self.id, res, rlimit, self.time_after - self.time_before
 
 class Z3StrategyEvaluator():
-    def __init__(self, benchmark_dir, timeout, batch_size):
+    def __init__(self, benchmark_dir, timeout, batch_size, test_factor=1):
         self.benchmarkDir = benchmark_dir
         self.benchmarkLst = [str(p) for p in sorted(
             list(pathlib.Path(self.benchmarkDir).rglob(f"*.smt2")))]
         assert (self.getBenchmarkSize() > 0)
-        self.timeout = int(timeout)
+        self.timeout = int(timeout/test_factor)
+        assert (self.timeout > 0)
         self.batchSize = batch_size
     
     def getBenchmarkSize(self):

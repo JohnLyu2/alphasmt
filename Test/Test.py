@@ -36,8 +36,9 @@ def main():
     eval1 = Z3StrategyEvaluator(
         "/Users/zhengyanglumacmini/Desktop/AlphaSMT/Experiments/Benchmarks/test1", 1, 2)
     print(eval1.benchmarkLst)
-    print(eval1.evaluate('smt'))
-    print(eval1.evaluate('(or-else (try-for (or-else (try-for smt 300) (or-else (then nla2bv smt) qfnra-nlsat)) 300) smt)'))
+    print(eval1.evaluate('sat'))
+    print(eval1.evaluate('(if is-qfbv-eq (then bv1-blast sat) (then simplify sat))'))
+    # print(eval1.evaluate('(or-else (try-for (or-else (try-for smt 300) (or-else (then nla2bv smt) qfnra-nlsat)) 300) smt)'))
     # print(eval1.results)
 
     # MCTS tests

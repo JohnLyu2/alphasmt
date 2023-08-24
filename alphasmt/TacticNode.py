@@ -42,7 +42,7 @@ class TacticTerminal(DerivationNode):
     def __str__(self):
         if not self.params:
           return self.name 
-        tacticWithParamsStr = " (using-params " + self.name
+        tacticWithParamsStr = "(using-params " + self.name
         for param in self.params:
             paramStr = " :" + param + " " + str(self.params[param])
             tacticWithParamsStr += paramStr
@@ -114,8 +114,7 @@ class PreprocessNonterm(DerivationNode):
             27: "aig",
             28: "reduce-bv-size",
             29: "ackermannize_bv",
-            30: "bit-blast", 
-            31: "bv1-blast",
+            30: "bit-blast", # require simplifcation beforehand; otherwise report error
             # 32 - 34 are BV only
             32: "lia2card",
             33: "card2bv",
@@ -132,7 +131,7 @@ class PreprocessNonterm(DerivationNode):
 
     def legalActions(self, rollout = False):
         actions = [i for i in range(20,25)]
-        if self.logic == "BV":
+        if self.logic == "QF_BV":
             upbound = 30 if rollout else 31
             return actions + [i for i in range(25,upbound)]
         elif self.logic == "QF_NIA":
@@ -174,7 +173,7 @@ class SolvingNonterm(DerivationNode):
         return False
 
     def legalActions(self, rollout = False):
-        if self.logic == "BV":
+        if self.logic == "QF_BV":
             return [10]
         return list(self.action_dict.keys())
 

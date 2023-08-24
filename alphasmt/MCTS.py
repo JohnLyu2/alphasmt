@@ -6,7 +6,7 @@ from alphasmt.Environment import StrategyGame
 log = logging.getLogger(__name__)
 log.setLevel(logging.INFO)
 log_handler = logging.StreamHandler()
-log_handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(message)s'))
+log_handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(message)s','%Y-%m-%d %H:%M:%S'))
 log.addHandler(log_handler)
 
 INIT_Q = 1
@@ -47,7 +47,6 @@ PARAMS = {
 
 class MCTSNode():
     def __init__(self, logger, c_ucb, alpha, action_history=[]):
-        # self.envn = envn
         self.c_ucb = c_ucb
         self.alpha = alpha
         self.visitCount = 0
@@ -129,7 +128,7 @@ class MCTSNode():
 
 
 class MCTS_RUN():
-    def __init__(self, num_simulations, training_set, logic, timeout, batch_size, log_folder, c_uct, c_ucb, alpha, root = None):
+    def __init__(self, num_simulations, training_set, logic, timeout, batch_size, log_folder, c_uct, c_ucb, alpha, test_factor, root = None):
         # to-do: pack some into config
         self.numSimulations = num_simulations
         self.discount = 1  # now set to 1
@@ -145,8 +144,10 @@ class MCTS_RUN():
         self.sim_log.setLevel(logging.DEBUG)
         simlog_handler = logging.FileHandler(f"{log_folder}/mcts_simulations.log")
         self.sim_log.addHandler(simlog_handler)
+        self.testFactor = test_factor
         if not root: root = MCTSNode(self.sim_log, c_ucb, alpha)
         self.root = root
+        self.bestReward = -1
 
     def _uct(self, childNode, parentNode, action):
         valueScore = 0
@@ -192,7 +193,6 @@ class MCTS_RUN():
     def _expandNode(node, actions, reward, c_ucb, alpha, logger):
         node.reward = reward
         for action in actions:
-            # childEnvn = node.envn.step(action)
             history = copy.deepcopy(node.actionHistory)
             history.append(action)
             node.children[action] = MCTSNode(logger, c_ucb, alpha, history)
@@ -211,7 +211,7 @@ class MCTS_RUN():
 
     def _oneSimulation(self):
         # now does not consider the root is not the game start
-        self.env = StrategyGame(self.trainingSet, self.logic, self.timeout, self.batchSize)
+        self.env = StrategyGame(self.trainingSet, self.logic, self.timeout, self.batchSize, test_factor=self.testFactor)
         selectNode, searchPath = self._select()
         self.sim_log.info("Selected Node: " + str(selectNode))
         self.sim_log.info("Selected Strategy ParseTree: " + str(self.env))
@@ -225,7 +225,10 @@ class MCTS_RUN():
             self._rollout()
             self.sim_log.info("Rollout Strategy: " + str(self.env))
             value = self.env.getValue(self.resDatabase)
-        self.sim_log.info("Final Return: " + str(value) + "\n")
+        if value > self.bestReward:
+            self.bestReward = value
+            log.info(f"New best reward found: {value:.5f}")
+        self.sim_log.info(f"Final Return: {value}\n")
         self._backup(searchPath, value)
 
     def start(self):

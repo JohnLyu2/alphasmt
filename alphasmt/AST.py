@@ -1,60 +1,20 @@
 from alphasmt.TacticNode import *
 
-
 MAX_TIMEOUT_STRAT = 3
-# class FailableStratNonterm(DerivationNode):
-#     def __init__(self, logic, parent, children = None, expand_type = None):
-#         super().__init__(children, expand_type, parent)
-#         self.logic = logic
-#         self.action_dict = {
-#             5: self.applyBVRule, # <FailableStrategy>(QF_NIA) := (then nla2bv <Strategy>(BV))
-#             6: self.applyTryRule # <FailableStrategy>(QF_NIA/BV) := (try-for <Strategy>(QF_NIA/BV) <timeout>)
-#         }
-
-#     def __str__(self):
-#         if self.isLeaf():
-#             return f"<FailableStrategy>({self.logic})"
-#         if self.expandType == 5:
-#             returnStr = "(then " + \
-#                 str(self.children[0]) + " " + str(self.children[1]) + ")"
-#             return returnStr
-#         if self.expandType == 6:
-#             returnStr = "(try-for " + \
-#                 str(self.children[0]) + " " + "300" + ")" # to-do: make it modularize later
-#             return returnStr
-
-#     def isTerminal(self):
-#         return False
-
-#     def legalActions(self):
-#         if self.logic == "BV":
-#             return [6]
-#         return list(self.action_dict.keys())
-
-#     def applyBVRule(self, params):
-#         # params = TACTIC_PARAMS[tactic_name] if tactic_name in TACTIC_PARAMS else None
-#         self.children.append(TacticTerminal("nla2bv", params, self))
-#         self.children.append(StrategyNonterm("BV", self)) # use <strategy> but with different tactic sets
-
-#     def applyTryRule(self, params):
-#         self.children.append(StrategyNonterm(self.logic, self))
-
-    # def clone(self):
-    #     childrenCp = self.childrenClone()
-    #     return FailableStratNonterm(self.logic, childrenCp, self.expandType)
-
 
 class StrategyNonterm(DerivationNode):
-    def __init__(self, logic, timeout, timeout_status, parent, children = None, expand_type = None):
+    def __init__(self, logic, timeout, timeout_status, parent, children = None, expand_type = None, bv1blast = True):
         super().__init__(children, expand_type, parent)
         self.logic = logic
         self.timeout = timeout
         self.timeoutStatus = timeout_status # -1: itself a timed strategy; otherwise: number of timed strategies already tried beforehand
+        self.bv1blast = bv1blast # for QF_BV, is bv1blast applicable
         self.action_dict = {
             0: self.applySolveRule,  # <Strategy> := <SolvingTactic>
-            1: self.applyThenRule,   # <Strategy> := (then <PreprocessTactic> <Strategy>)
-            2: self.applyTimeoutRule,  # <Strategy> := (or-else (try-for <Strategy>(QF_NIA/BV) <timeout>) <Strategy>(QF_NIA/BV))
-            5: self.apply2BVRule  # <Strategy>(QF_NIA) := (or-else (then nla2bv <Strategy>(BV)) <Strategy>(QF_NIA))
+            1: self.applyThenRule,  # <Strategy> := (then <PreprocessTactic> <Strategy>)
+            2: self.applyTimeoutRule,  # <Strategy> := (or-else (try-for <Strategy>(QF_NIA/QF_BV) <timeout>) <Strategy>(QF_NIA/QF_BV))
+            5: self.apply2BVRule,  # <Strategy>(QF_NIA) := (or-else (then nla2bv <Strategy>(QF_BV)) <Strategy>(QF_NIA))
+            6: self.applyBV1Blast  # <Strategy>(QF_BV) := (if is-qfbv-eq (then bv1-blast <Strategy>(QF_BV) <Strategy>(QF_BV))
         }
 
     def __str__(self):
@@ -73,13 +33,12 @@ class StrategyNonterm(DerivationNode):
         elif self.expandType == 5:
             returnStr = f"(or-else (then {self.children[0]} {self.children[1]}) {self.children[2]})"
             return returnStr
+        elif self.expandType == 6:
+            returnStr = f"(if is-qfbv-eq (then {self.children[0]} {self.children[1]}) {self.children[2]})"
+            return returnStr
 
     def isTerminal(self):
         return False
-
-    def _getBVPreprocessActions(self):
-        assert(self.logic == "BV")
-        
 
     def legalActions(self, rollout = False):
         actions = [0, 1]
@@ -87,11 +46,13 @@ class StrategyNonterm(DerivationNode):
             actions.append(2)
         if (not rollout) and (self.logic == "QF_NIA" or self.logic == "QF_NRA"):
             actions.append(5)
+        if (self.logic == "QF_BV") and self.bv1blast:
+            actions.append(6)
         return actions
 
     def applyThenRule(self, params):
         self.children.append(PreprocessNonterm(self.logic, self))
-        self.children.append(StrategyNonterm(self.logic, self.timeout, self.timeoutStatus, self))
+        self.children.append(StrategyNonterm(self.logic, self.timeout, self.timeoutStatus, self,bv1blast=self.bv1blast))
 
     def applySolveRule(self, params):
         self.children.append(SolvingNonterm(self.logic, self)) 
@@ -101,13 +62,21 @@ class StrategyNonterm(DerivationNode):
         tryTimeout = params["timeout"]
         remainTimeout = self.timeout - tryTimeout
         assert(remainTimeout > 0)
-        self.children.append(StrategyNonterm(self.logic, tryTimeout, -1, self))
-        self.children.append(StrategyNonterm(self.logic, remainTimeout, self.timeoutStatus+1, self))
+        self.children.append(StrategyNonterm(self.logic, tryTimeout, -1, parent=self, bv1blast=self.bv1blast))
+        self.children.append(StrategyNonterm(self.logic, remainTimeout, self.timeoutStatus+1, parent=self, bv1blast=self.bv1blast))
 
     def apply2BVRule(self, params):
         self.children.append(TacticTerminal("nla2bv", params, self))
-        self.children.append(StrategyNonterm("BV", self.timeout, self.timeoutStatus, self)) # use <strategy> but with different tactic sets
+        self.children.append(StrategyNonterm("QF_BV", self.timeout, self.timeoutStatus, self)) # use <strategy> but with different tactic sets
         self.children.append(StrategyNonterm(self.logic, self.timeout, self.timeoutStatus, self))
+
+    def applyBV1Blast(self, params):
+        self.children.append(TacticTerminal("bv1-blast", params, self))
+        self.children.append(StrategyNonterm(logic="QF_BV", timeout=self.timeout, timeout_status=self.timeoutStatus, parent=self, bv1blast=False))
+        self.children.append(StrategyNonterm(logic="QF_BV", timeout=self.timeout, timeout_status=self.timeoutStatus, parent=self, bv1blast=False))
+
+
+
 
     # def clone(self):
     #     childrenCp = self.childrenClone()

@@ -12,7 +12,7 @@ from alphasmt.Evaluator import Z3StrategyEvaluator
 log = logging.getLogger(__name__)
 log.setLevel(logging.INFO)
 log_handler = logging.StreamHandler()
-log_handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(message)s'))
+log_handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(message)s','%Y-%m-%d %H:%M:%S'))
 log.addHandler(log_handler)
 
 import functools
@@ -34,6 +34,7 @@ def main():
     c_uct =  config['c_uct'] # for mcts select
     c_ucb =  config['c_ucb'] # for parameter mab
     mab_alpha =  config['mab_alpha'] # for parameter mab
+    test_factor = config['testing_factor']
 
     log_folder = f"experiments/results/out-{datetime.datetime.now():%Y-%m-%d_%H-%M-%S}/"
     assert(not os.path.exists(log_folder))
@@ -41,7 +42,7 @@ def main():
 
     # train
     log.info("MCTS Simulations Start")
-    run = MCTS_RUN(sim_num, train_path, logic, timeout, batchSize, log_folder, c_uct, c_ucb, mab_alpha)
+    run = MCTS_RUN(sim_num, train_path, logic, timeout, batchSize, log_folder, c_uct=c_uct, c_ucb=c_ucb, alpha=mab_alpha, test_factor=test_factor)
     run.start()
     strat_candidates = run.bestNStrategies(num_val_strat)
     log.info(f"Simulations done. {num_val_strat} strategies are selected.")
@@ -54,7 +55,7 @@ def main():
 
 
     log.info("Validation Starts\n")
-    valEvaluator = Z3StrategyEvaluator(val_path, timeout, batchSize)
+    valEvaluator = Z3StrategyEvaluator(val_path, timeout, batchSize, test_factor=test_factor)
     valSize = valEvaluator.getBenchmarkSize()
     bestPar2 = valSize * timeout * 2
     bestStrat = None
@@ -63,11 +64,10 @@ def main():
       val_log.info(f"Training Score: {run.getStrategyStat(strat)}")
       valResTuple = valEvaluator.evaluate(strat)  
       par2 = Z3StrategyEvaluator.caculateTimePar2(valResTuple, valSize, timeout)
-      val_log.info(f"Validation: solved {valResTuple[0]} instances with rlimit {valResTuple[1]} and time {valResTuple[2]}; par2: {par2}\n")
+      val_log.info(f"Validation: solved {valResTuple[0]} instances with rlimit {valResTuple[1]} and time {valResTuple[2]:.02f}; par2: {par2:.02f}\n")
       if par2 < bestPar2:
          bestPar2 = par2
          bestStrat = strat
-
 
     log.info(f"Best Strategy found: \n{bestStrat}")
     finalStratPath = f"{log_folder}/final_strategy.txt"
