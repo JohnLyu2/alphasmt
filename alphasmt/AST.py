@@ -8,13 +8,14 @@ class StrategyNonterm(DerivationNode):
         self.logic = logic
         self.timeout = timeout
         self.timeoutStatus = timeout_status # -1: itself a timed strategy; otherwise: number of timed strategies already tried beforehand
-        self.bv1blast = bv1blast # for QF_BV, is bv1blast applicable
+        self.bv1blast = bv1blast # for QF_BV, is bv1blast applicable; for other logics, it is meaningless
         self.action_dict = {
             0: self.applySolveRule,  # <Strategy> := <SolvingTactic>
             1: self.applyThenRule,  # <Strategy> := (then <PreprocessTactic> <Strategy>)
             2: self.applyTimeoutRule,  # <Strategy> := (or-else (try-for <Strategy>(QF_NIA/QF_BV) <timeout>) <Strategy>(QF_NIA/QF_BV))
             5: self.apply2BVRule,  # <Strategy>(QF_NIA) := (or-else (then nla2bv <Strategy>(QF_BV)) <Strategy>(QF_NIA))
-            6: self.applyBV1Blast  # <Strategy>(QF_BV) := (if is-qfbv-eq (then bv1-blast <Strategy>(QF_BV) <Strategy>(QF_BV))
+            6: self.applyBV1BlastRule,  # <Strategy>(QF_BV) := (if is-qfbv-eq (then bv1-blast <Strategy>(QF_BV) <Strategy>(QF_BV))
+            7: self.applyBitBlastRule  # <Strategy>(BV) := (then simplify bit-blast <Strategy>(SAT))
         }
 
     def __str__(self):
@@ -36,6 +37,11 @@ class StrategyNonterm(DerivationNode):
         elif self.expandType == 6:
             returnStr = f"(if is-qfbv-eq (then {self.children[0]} {self.children[1]}) {self.children[2]})"
             return returnStr
+        elif self.expandType == 7:
+            returnStr = f"(then {self.children[0]} {self.children[1]} {self.children[2]})"
+            return returnStr
+        else:
+            raise Exception("unexpected action")
 
     def isTerminal(self):
         return False
@@ -46,8 +52,10 @@ class StrategyNonterm(DerivationNode):
             actions.append(2)
         if (not rollout) and (self.logic == "QF_NIA" or self.logic == "QF_NRA"):
             actions.append(5)
-        if (self.logic == "QF_BV") and self.bv1blast:
-            actions.append(6)
+        if (self.logic == "QF_BV"):
+            actions.append(7)
+            if self.bv1blast:
+                actions.append(6)
         return actions
 
     def applyThenRule(self, params):
@@ -70,10 +78,15 @@ class StrategyNonterm(DerivationNode):
         self.children.append(StrategyNonterm("QF_BV", self.timeout, self.timeoutStatus, self)) # use <strategy> but with different tactic sets
         self.children.append(StrategyNonterm(self.logic, self.timeout, self.timeoutStatus, self))
 
-    def applyBV1Blast(self, params):
+    def applyBV1BlastRule(self, params):
         self.children.append(TacticTerminal("bv1-blast", params, self))
         self.children.append(StrategyNonterm(logic="QF_BV", timeout=self.timeout, timeout_status=self.timeoutStatus, parent=self, bv1blast=False))
         self.children.append(StrategyNonterm(logic="QF_BV", timeout=self.timeout, timeout_status=self.timeoutStatus, parent=self, bv1blast=False))
+
+    def applyBitBlastRule(self, params):
+        self.children.append(TacticTerminal(name="simplify", params=None, parent=self))
+        self.children.append(TacticTerminal(name="bit-blast", params=params, parent=self)) # now the parameter for this action is for the tactic bit-blaster
+        self.children.append(StrategyNonterm(logic="SAT", timeout=self.timeout, timeout_status=-1, parent=self, bv1blast=self.bv1blast)) # for sat formula do not introduce timeout
 
 
 

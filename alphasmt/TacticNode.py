@@ -1,5 +1,3 @@
-import math
-
 class DerivationNode():
     def __init__(self, children, expand_type, parent): # may not need parent
         if children is None:
@@ -108,14 +106,14 @@ class PreprocessNonterm(DerivationNode):
             22: "ctx-simplify",
             23: "elim-uncnstr",
             24: "solve-eqs",
-            # 25 - 31 are BV only
+            # 25 - 31 are QF_BV only
             25: "purify-arith",
             26: "max-bv-sharing",
             27: "aig",
             28: "reduce-bv-size",
             29: "ackermannize_bv",
-            30: "bit-blast", # require simplifcation beforehand; otherwise report error
-            # 32 - 34 are BV only
+            # 30: "bit-blast", # require simplifcation beforehand; otherwise report error
+            # 32 - 34 are QF_NIA only
             32: "lia2card",
             33: "card2bv",
             34: "cofactor-term-ite"
@@ -132,11 +130,10 @@ class PreprocessNonterm(DerivationNode):
     def legalActions(self, rollout = False):
         actions = [i for i in range(20,25)]
         if self.logic == "QF_BV":
-            upbound = 30 if rollout else 31
-            return actions + [i for i in range(25,upbound)]
+            return actions + [i for i in range(25,30)]
         elif self.logic == "QF_NIA":
             return actions + [i for i in range(32,35)]
-        elif self.logic == "QF_NRA":
+        elif self.logic == "QF_NRA" or self.logic == "SAT":
             return actions
         else: 
             raise Exception("unexpected smt logic")
@@ -161,7 +158,8 @@ class SolvingNonterm(DerivationNode):
         self.logic = logic
         self.action_dict = {
             10: "smt",
-            11: "qfnra-nlsat" # not for BV
+            11: "qfnra-nlsat", # not for BV
+            12: "sat"
         }
 
     def __str__(self):
@@ -173,9 +171,15 @@ class SolvingNonterm(DerivationNode):
         return False
 
     def legalActions(self, rollout = False):
+        actions = [10]
         if self.logic == "QF_BV":
-            return [10]
-        return list(self.action_dict.keys())
+            return actions
+        elif self.logic == "QF_NIA" or self.logic == "QF_NRA":
+            return actions + [11]
+        elif self.logic == "SAT":
+            return actions + [12]
+        else: 
+            raise Exception("unexpected smt logic")
 
     def applyRule(self, action, params):
         assert (self.isLeaf())
