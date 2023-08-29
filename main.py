@@ -3,6 +3,8 @@ import logging
 import argparse
 import json
 import datetime
+import pathlib
+from z3 import *
 
 from alphasmt.AST import DerivationAST
 from alphasmt.MCTS import MCTSNode, MCTS_RUN
@@ -17,6 +19,37 @@ log.addHandler(log_handler)
 
 import functools
 print = functools.partial(print, flush=True)
+
+def calculatePercentile(lst, percentile):
+    assert (len(lst) > 0)
+    sortedLst = sorted(lst)
+    index = int(len(sortedLst) * percentile)
+    return sortedLst[index]
+
+def createProbeStatDict(benchmark_directory):
+    numConstsLst = []
+    numExprsLst = []
+    sizeLst = []
+    benchmarkLst = [str(p) for p in sorted(list(pathlib.Path(benchmark_directory).rglob(f"*.smt2")))]
+    # no parllel now 
+    for smt_path in benchmarkLst:
+        formula = parse_smt2_file(smt_path)
+        constProbe = Probe('num-consts')
+        exprProbe = Probe('num-exprs')
+        sizeProbe = Probe('size')
+        goal = Goal()
+        goal.add(formula)
+        numConstsLst.append(constProbe(goal))
+        numExprsLst.append(exprProbe(goal))
+        sizeLst.append(sizeProbe(goal))
+    # get 90 percentile, 70 percentile and median from lists
+    percentileLst = [0.9, 0.7, 0.5]
+    probeStats = {}
+    # to-do: make probe as list
+    probeStats[50] = {"value": [calculatePercentile(numConstsLst, p) for p in percentileLst]} # action 50: probe num-consts
+    probeStats[51] = {"value": [calculatePercentile(numExprsLst, p) for p in percentileLst]} # action 51: probe num-exprs
+    probeStats[52] = {"value": [calculatePercentile(sizeLst, p) for p in percentileLst]} # action 52: probe size
+    return probeStats
 
 def main():
     parser = argparse.ArgumentParser()
@@ -40,9 +73,12 @@ def main():
     assert(not os.path.exists(log_folder))
     os.makedirs(log_folder)
 
+    trainProbeStatDict = createProbeStatDict(train_path)
+    log.info(f"Probe Stats: {trainProbeStatDict}")
+
     # train
     log.info("MCTS Simulations Start")
-    run = MCTS_RUN(sim_num, train_path, logic, timeout, batchSize, log_folder, c_uct=c_uct, c_ucb=c_ucb, alpha=mab_alpha, test_factor=test_factor)
+    run = MCTS_RUN(sim_num, train_path, logic, timeout, batchSize, log_folder, c_uct=c_uct, c_ucb=c_ucb, alpha=mab_alpha, test_factor=test_factor, probe_dict=trainProbeStatDict)
     run.start()
     strat_candidates = run.bestNStrategies(num_val_strat)
     log.info(f"Simulations done. {num_val_strat} strategies are selected.")

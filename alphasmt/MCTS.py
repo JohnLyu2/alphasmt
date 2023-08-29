@@ -46,7 +46,7 @@ PARAMS = {
 }
 
 class MCTSNode():
-    def __init__(self, logger, c_ucb, alpha, action_history=[]):
+    def __init__(self, logger, c_ucb, alpha, probe_dict, action_history=[]):
         self.c_ucb = c_ucb
         self.alpha = alpha
         self.visitCount = 0
@@ -54,6 +54,7 @@ class MCTSNode():
         self.valueLst = []
         self.children = {}
         self.reward = 0  # always 0 for now
+        self.probeDict = probe_dict
         self._setParamMABs()
         self.logger = logger
 
@@ -64,11 +65,17 @@ class MCTSNode():
         return bool(self.children)
 
     def hasParamMABs(self):
-        return len(self.actionHistory)>0 and self.actionHistory[-1] in PARAMS.keys()
+        if len(self.actionHistory) == 0: return False
+        lastestAction = self.actionHistory[-1]
+        return (lastestAction in PARAMS.keys() or lastestAction in self.probeDict.keys())
 
     def _setParamMABs(self):
         if not self.hasParamMABs(): return
-        self.params = PARAMS[self.actionHistory[-1]]
+        lastestAction = self.actionHistory[-1]
+        if lastestAction in PARAMS.keys():
+            self.params = PARAMS[lastestAction]
+        else:
+            self.params = self.probeDict[lastestAction]
         self.MABs = {}
         self.selected = {}
         for param in self.params.keys():
@@ -128,7 +135,7 @@ class MCTSNode():
 
 
 class MCTS_RUN():
-    def __init__(self, num_simulations, training_set, logic, timeout, batch_size, log_folder, c_uct, c_ucb, alpha, test_factor, root = None):
+    def __init__(self, num_simulations, training_set, logic, timeout, batch_size, log_folder, c_uct, c_ucb, alpha, test_factor, probe_dict, root = None):
         # to-do: pack some into config
         self.numSimulations = num_simulations
         self.discount = 1  # now set to 1
@@ -145,7 +152,8 @@ class MCTS_RUN():
         simlog_handler = logging.FileHandler(f"{log_folder}/mcts_simulations.log")
         self.sim_log.addHandler(simlog_handler)
         self.testFactor = test_factor
-        if not root: root = MCTSNode(self.sim_log, c_ucb, alpha)
+        self.probeDict = probe_dict
+        if not root: root = MCTSNode(self.sim_log, c_ucb, alpha, self.probeDict)
         self.root = root
         self.bestReward = -1
 
@@ -180,8 +188,6 @@ class MCTS_RUN():
                     nextNode = childNode
             assert(bestUCT >= 0)
             node = nextNode
-            # _, action, node = max((self._uct(childNode, node, action), action, childNode)
-            #                       for action, childNode in node.children.items()) 
             self.sim_log.debug(f"  Selected action {selected}")
             remainTime = self.env.getRemainTime() if selected == 2 else None
             params = node.selectMABs(remainTime) if node.hasParamMABs() else None
@@ -190,12 +196,12 @@ class MCTS_RUN():
         return node, searchPath
 
     @staticmethod
-    def _expandNode(node, actions, reward, c_ucb, alpha, logger):
+    def _expandNode(node, actions, reward, c_ucb, alpha, probe_dict, logger):
         node.reward = reward
         for action in actions:
             history = copy.deepcopy(node.actionHistory)
             history.append(action)
-            node.children[action] = MCTSNode(logger, c_ucb, alpha, history)
+            node.children[action] = MCTSNode(logger, c_ucb, alpha, probe_dict, history)
 
     def _rollout(self):
         self.env.rollout()
@@ -221,7 +227,7 @@ class MCTS_RUN():
         else:
             actions = self.env.legalActions()
             # now reward is always 0 at each step
-            MCTS_RUN._expandNode(selectNode, actions, 0, self.c_ucb, self.alpha, self.sim_log)
+            MCTS_RUN._expandNode(selectNode, actions, 0, self.c_ucb, self.alpha, self.probeDict, self.sim_log)
             self._rollout()
             self.sim_log.info("Rollout Strategy: " + str(self.env))
             value = self.env.getValue(self.resDatabase)

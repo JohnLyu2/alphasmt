@@ -30,6 +30,47 @@ class DerivationNode():
     #         chldCpLst.append(child.clone())
     #     return chldCpLst
 
+class ProbeTerminal(DerivationNode):
+    def __init__(self, name, value, parent):
+        super().__init__(None, None, parent)
+        self.name = name
+        self.value = value
+
+    def __str__(self):
+        return f"({self.name} {self.value})"
+
+    def isTerminal(self):
+        return True
+
+class ProbeSelectorNonterm(DerivationNode):
+    def __init__(self, parent, children = None, expand_type = None):
+        super().__init__(children, expand_type, parent)
+        self.action_dict = {
+            50: "num-consts", 
+            51: "num-exprs",
+            52: "size"
+        }
+
+    def __str__(self):
+        if self.isLeaf():
+            return f"<Probe + Value>"
+        return str(self.children[0])
+    
+    def isTerminal(self):
+        return False
+    
+    def legalActions(self, rollout = False):
+        return list(self.action_dict.keys())
+    
+    # to be checked
+    def applyRule(self, action, params):
+        assert (self.isLeaf())
+        assert (action in self.legalActions())
+        probe_name = self.action_dict[action]
+        selected = ProbeTerminal(probe_name, params, self)
+        self.children.append(selected)
+        self.expandType = action
+
 class TacticTerminal(DerivationNode):
     def __init__(self, name, params, parent): # tactic terminals do not have children 
         super().__init__(None, None, parent)
@@ -49,6 +90,7 @@ class TacticTerminal(DerivationNode):
 
     def hasParams(self):
         return not self.params
+
 
     # def _setParamMABs(self):
     #     if not self.hasParams(): return

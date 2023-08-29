@@ -1,9 +1,10 @@
 from alphasmt.TacticNode import *
 
 MAX_TIMEOUT_STRAT = 3
+MAX_BRANCH_DEPTH = 2
 
 class StrategyNonterm(DerivationNode):
-    def __init__(self, logic, timeout, timeout_status, parent, children = None, expand_type = None, bv1blast = True):
+    def __init__(self, logic, timeout, timeout_status, branch_status, parent, children = None, expand_type = None, bv1blast = True):
         super().__init__(children, expand_type, parent)
         self.logic = logic
         self.timeout = timeout
@@ -13,6 +14,7 @@ class StrategyNonterm(DerivationNode):
             0: self.applySolveRule,  # <Strategy> := <SolvingTactic>
             1: self.applyThenRule,  # <Strategy> := (then <PreprocessTactic> <Strategy>)
             2: self.applyTimeoutRule,  # <Strategy> := (or-else (try-for <Strategy>(QF_NIA/QF_BV) <timeout>) <Strategy>(QF_NIA/QF_BV))
+            3: self.applyIfRule,  # <Strategy> := (if (> <num-probe> <percentile-value>) <Strategy> <Strategy>)
             5: self.apply2BVRule,  # <Strategy>(QF_NIA) := (or-else (then nla2bv <Strategy>(QF_BV)) <Strategy>(QF_NIA))
             6: self.applyBV1BlastRule,  # <Strategy>(QF_BV) := (if is-qfbv-eq (then bv1-blast <Strategy>(QF_BV) <Strategy>(QF_BV))
             7: self.applyBitBlastRule  # <Strategy>(BV) := (then simplify bit-blast <Strategy>(SAT))
@@ -72,6 +74,13 @@ class StrategyNonterm(DerivationNode):
         assert(remainTimeout > 0)
         self.children.append(StrategyNonterm(self.logic, tryTimeout, -1, parent=self, bv1blast=self.bv1blast))
         self.children.append(StrategyNonterm(self.logic, remainTimeout, self.timeoutStatus+1, parent=self, bv1blast=self.bv1blast))
+
+    def applyIfRule(self, params):
+        self.children.append()
+        self.children.append(StrategyNonterm(self.logic, self.timeout, self.timeoutStatus, self, bv1blast=self.bv1blast))
+        self.children.append(StrategyNonterm(self.logic, self.timeout, self.timeoutStatus, self, bv1blast=self.bv1blast))
+
+
 
     def apply2BVRule(self, params):
         self.children.append(TacticTerminal("nla2bv", params, self))
