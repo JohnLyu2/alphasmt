@@ -1,0 +1,402 @@
+Simulation 0 starts
+Selected Node: []
+Selected Strategy ParseTree: <Strategy>(QF_NIA)
+Rollout Strategy: smt
+Final Return: 0.7353528439998627
+
+Simulation 1 starts
+
+  Select at []
+  Value of 0: count: Q value: 0.00000; Exp: 0.00000 (0/1); UCT: 0.00000
+  Value of 1: count: Q value: 0.00000; Exp: 0.00000 (0/1); UCT: 0.00000
+  Value of 2: count: Q value: 0.00000; Exp: 0.00000 (0/1); UCT: 0.00000
+  Value of 3: count: Q value: 0.00000; Exp: 0.00000 (0/1); UCT: 0.00000
+  Value of 5: count: Q value: 0.00000; Exp: 0.00000 (0/1); UCT: 0.00000
+  Selected action 0
+Selected Node: [0]
+Selected Strategy ParseTree: <SolvingTactic>(QF_NIA)
+Rollout Strategy: qfnra-nlsat
+Final Return: 0.746587723493576
+
+Simulation 2 starts
+
+  Select at []
+  Value of 0: count: Q value: 0.74659; Exp: 0.41607 (1/2); UCT: 1.16266
+  Value of 1: count: Q value: 0.00000; Exp: 13.16384 (0/2); UCT: 13.16384
+  Value of 2: count: Q value: 0.00000; Exp: 13.16384 (0/2); UCT: 13.16384
+  Value of 3: count: Q value: 0.00000; Exp: 13.16384 (0/2); UCT: 13.16384
+  Value of 5: count: Q value: 0.00000; Exp: 13.16384 (0/2); UCT: 13.16384
+  Selected action 1
+Selected Node: [1]
+Selected Strategy ParseTree: (then <PreprocessTactic>(QF_NIA) <Strategy>(QF_NIA))
+Rollout Strategy: (then ctx-simplify qfnra-nlsat)
+Final Return: 0.7463409006595612
+
+Simulation 3 starts
+
+  Select at []
+  Value of 0: count: Q value: 0.74659; Exp: 0.52381 (1/3); UCT: 1.27040
+  Value of 1: count: Q value: 0.74634; Exp: 0.52381 (1/3); UCT: 1.27015
+  Value of 2: count: Q value: 0.00000; Exp: 16.57266 (0/3); UCT: 16.57266
+  Value of 3: count: Q value: 0.00000; Exp: 16.57266 (0/3); UCT: 16.57266
+  Value of 5: count: Q value: 0.00000; Exp: 16.57266 (0/3); UCT: 16.57266
+  Selected action 2
+
+  Select MAB of timeout
+  Value of 2: count: Q value: 1.00000; Exp: 0.00000 (0/0); UCB: 1.00000
+  Value of 4: count: Q value: 1.00000; Exp: 0.00000 (0/0); UCB: 1.00000
+  Value of 8: count: Q value: 1.00000; Exp: 0.00000 (0/0); UCB: 1.00000
+  Value of 16: count: Q value: 1.00000; Exp: 0.00000 (0/0); UCB: 1.00000
+  Selected value: 2
+
+Selected Node: [2]
+Selected Strategy ParseTree: (or-else (try-for <Strategy>(QF_NIA) 2000) <Strategy>(QF_NIA))
+Rollout Strategy: (or-else (try-for qfnra-nlsat 2000) (then lia2card qfnra-nlsat))
+Final Return: 0.7464393973350525
+
+Simulation 4 starts
+
+  Select at []
+  Value of 0: count: Q value: 0.74659; Exp: 0.58841 (1/4); UCT: 1.33500
+  Value of 1: count: Q value: 0.74634; Exp: 0.58841 (1/4); UCT: 1.33475
+  Value of 2: count: Q value: 0.74644; Exp: 0.58841 (1/4); UCT: 1.33485
+  Value of 3: count: Q value: 0.00000; Exp: 18.61649 (0/4); UCT: 18.61649
+  Value of 5: count: Q value: 0.00000; Exp: 18.61649 (0/4); UCT: 18.61649
+  Selected action 3
+Selected Node: [3]
+Selected Strategy ParseTree: (if (> <Probe + Value>) <Strategy>(QF_NIA) <Strategy>(QF_NIA))
+Rollout Strategy: (if (> size 49.0) qfnra-nlsat (then solve-eqs qfnra-nlsat))
+Final Return: 0.7466823756694794
+
+Simulation 5 starts
+
+  Select at []
+  Value of 0: count: Q value: 0.74659; Exp: 0.63400 (1/5); UCT: 1.38059
+  Value of 1: count: Q value: 0.74634; Exp: 0.63400 (1/5); UCT: 1.38034
+  Value of 2: count: Q value: 0.74644; Exp: 0.63400 (1/5); UCT: 1.38044
+  Value of 3: count: Q value: 0.74668; Exp: 0.63400 (1/5); UCT: 1.38068
+  Value of 5: count: Q value: 0.00000; Exp: 20.05890 (0/5); UCT: 20.05890
+  Selected action 5
+
+  Select MAB of nla2bv_max_bv_size
+  Value of 4: count: Q value: 1.00000; Exp: 0.00000 (0/0); UCB: 1.00000
+  Value of 8: count: Q value: 1.00000; Exp: 0.00000 (0/0); UCB: 1.00000
+  Value of 16: count: Q value: 1.00000; Exp: 0.00000 (0/0); UCB: 1.00000
+  Value of 32: count: Q value: 1.00000; Exp: 0.00000 (0/0); UCB: 1.00000
+  Value of 64: count: Q value: 1.00000; Exp: 0.00000 (0/0); UCB: 1.00000
+  Value of 128: count: Q value: 1.00000; Exp: 0.00000 (0/0); UCB: 1.00000
+  Selected value: 4
+
+Selected Node: [5]
+Selected Strategy ParseTree: (or-else (then (using-params nla2bv :nla2bv_max_bv_size 4) <Strategy>(QF_BV)) <Strategy>(QF_NIA))
+Rollout Strategy: (or-else (then (using-params nla2bv :nla2bv_max_bv_size 4) (then simplify bit-blast sat)) (then propagate-values (then solve-eqs smt)))
+Final Return: 0.7458422482013702
+
+Simulation 6 starts
+
+  Select at []
+  Value of 0: count: Q value: 0.74659; Exp: 0.66895 (1/6); UCT: 1.41554
+  Value of 1: count: Q value: 0.74634; Exp: 0.66895 (1/6); UCT: 1.41529
+  Value of 2: count: Q value: 0.74644; Exp: 0.66895 (1/6); UCT: 1.41539
+  Value of 3: count: Q value: 0.74668; Exp: 0.66895 (1/6); UCT: 1.41563
+  Value of 5: count: Q value: 0.74584; Exp: 0.66895 (1/6); UCT: 1.41479
+  Selected action 3
+
+  Select at [3]
+  Value of 50: count: Q value: 0.00000; Exp: 0.00000 (0/1); UCT: 0.00000
+  Value of 51: count: Q value: 0.00000; Exp: 0.00000 (0/1); UCT: 0.00000
+  Value of 52: count: Q value: 0.00000; Exp: 0.00000 (0/1); UCT: 0.00000
+  Selected action 50
+
+  Select MAB of value
+  Value of 83.0: count: Q value: 1.00000; Exp: 0.00000 (0/0); UCB: 1.00000
+  Value of 38.0: count: Q value: 1.00000; Exp: 0.00000 (0/0); UCB: 1.00000
+  Selected value: 83.0
+
+Selected Node: [3, 50]
+Selected Strategy ParseTree: (if (> num-consts 83.0) <Strategy>(QF_NIA) <Strategy>(QF_NIA))
+Rollout Strategy: (if (> num-consts 83.0) (then card2bv smt) qfnra-nlsat)
+Final Return: 0.7467378973960876
+
+Simulation 7 starts
+
+  Select at []
+  Value of 0: count: Q value: 0.74659; Exp: 0.69713 (1/7); UCT: 1.44372
+  Value of 1: count: Q value: 0.74634; Exp: 0.69713 (1/7); UCT: 1.44347
+  Value of 2: count: Q value: 0.74644; Exp: 0.69713 (1/7); UCT: 1.44357
+  Value of 3: count: Q value: 0.74674; Exp: 0.49307 (2/7); UCT: 1.23981
+  Value of 5: count: Q value: 0.74584; Exp: 0.69713 (1/7); UCT: 1.44297
+  Selected action 0
+
+  Select at [0]
+  Value of 10: count: Q value: 0.00000; Exp: 0.00000 (0/1); UCT: 0.00000
+  Value of 11: count: Q value: 0.00000; Exp: 0.00000 (0/1); UCT: 0.00000
+  Selected action 10
+Selected Node: [0, 10]
+Selected Strategy ParseTree: smt
+Terminal Strategy: no rollout
+Final Return: 0.7353528439998627
+
+Simulation 8 starts
+
+  Select at []
+  Value of 0: count: Q value: 0.74659; Exp: 0.50971 (2/8); UCT: 1.25629
+  Value of 1: count: Q value: 0.74634; Exp: 0.72065 (1/8); UCT: 1.46699
+  Value of 2: count: Q value: 0.74644; Exp: 0.72065 (1/8); UCT: 1.46709
+  Value of 3: count: Q value: 0.74674; Exp: 0.50971 (2/8); UCT: 1.25644
+  Value of 5: count: Q value: 0.74584; Exp: 0.72065 (1/8); UCT: 1.46650
+  Selected action 2
+
+  Select MAB of timeout
+  Value of 2: count: Q value: 0.92393; Exp: 0.16643 (1/1); UCB: 1.09036
+  Value of 4: count: Q value: 1.00000; Exp: 5.26554 (0/1); UCB: 6.26554
+  Value of 8: count: Q value: 1.00000; Exp: 5.26554 (0/1); UCB: 6.26554
+  Value of 16: count: Q value: 1.00000; Exp: 5.26554 (0/1); UCB: 6.26554
+  Selected value: 4
+
+
+  Select at [2]
+  Value of 0: count: Q value: 0.00000; Exp: 0.00000 (0/1); UCT: 0.00000
+  Value of 1: count: Q value: 0.00000; Exp: 0.00000 (0/1); UCT: 0.00000
+  Value of 5: count: Q value: 0.00000; Exp: 0.00000 (0/1); UCT: 0.00000
+  Selected action 0
+Selected Node: [2, 0]
+Selected Strategy ParseTree: (or-else (try-for <SolvingTactic>(QF_NIA) 4000) <Strategy>(QF_NIA))
+Rollout Strategy: (or-else (try-for qfnra-nlsat 4000) smt)
+Final Return: 0.7464095056056976
+
+Simulation 9 starts
+
+  Select at []
+  Value of 0: count: Q value: 0.74659; Exp: 0.52394 (2/9); UCT: 1.27053
+  Value of 1: count: Q value: 0.74634; Exp: 0.74078 (1/9); UCT: 1.48712
+  Value of 2: count: Q value: 0.74644; Exp: 0.52394 (2/9); UCT: 1.27038
+  Value of 3: count: Q value: 0.74674; Exp: 0.52394 (2/9); UCT: 1.27068
+  Value of 5: count: Q value: 0.74584; Exp: 0.74078 (1/9); UCT: 1.48662
+  Selected action 1
+
+  Select at [1]
+  Value of 20: count: Q value: 0.00000; Exp: 0.00000 (0/1); UCT: 0.00000
+  Value of 21: count: Q value: 0.00000; Exp: 0.00000 (0/1); UCT: 0.00000
+  Value of 22: count: Q value: 0.00000; Exp: 0.00000 (0/1); UCT: 0.00000
+  Value of 23: count: Q value: 0.00000; Exp: 0.00000 (0/1); UCT: 0.00000
+  Value of 24: count: Q value: 0.00000; Exp: 0.00000 (0/1); UCT: 0.00000
+  Value of 32: count: Q value: 0.00000; Exp: 0.00000 (0/1); UCT: 0.00000
+  Value of 33: count: Q value: 0.00000; Exp: 0.00000 (0/1); UCT: 0.00000
+  Value of 34: count: Q value: 0.00000; Exp: 0.00000 (0/1); UCT: 0.00000
+  Selected action 20
+
+  Select MAB of elim_and
+  Value of true: count: Q value: 1.00000; Exp: 0.00000 (0/0); UCB: 1.00000
+  Value of false: count: Q value: 1.00000; Exp: 0.00000 (0/0); UCB: 1.00000
+  Selected value: true
+
+
+  Select MAB of som
+  Value of true: count: Q value: 1.00000; Exp: 0.00000 (0/0); UCB: 1.00000
+  Value of false: count: Q value: 1.00000; Exp: 0.00000 (0/0); UCB: 1.00000
+  Selected value: true
+
+
+  Select MAB of blast_distinct
+  Value of true: count: Q value: 1.00000; Exp: 0.00000 (0/0); UCB: 1.00000
+  Value of false: count: Q value: 1.00000; Exp: 0.00000 (0/0); UCB: 1.00000
+  Selected value: true
+
+
+  Select MAB of flat
+  Value of true: count: Q value: 1.00000; Exp: 0.00000 (0/0); UCB: 1.00000
+  Value of false: count: Q value: 1.00000; Exp: 0.00000 (0/0); UCB: 1.00000
+  Selected value: true
+
+
+  Select MAB of hi_div0
+  Value of true: count: Q value: 1.00000; Exp: 0.00000 (0/0); UCB: 1.00000
+  Value of false: count: Q value: 1.00000; Exp: 0.00000 (0/0); UCB: 1.00000
+  Selected value: true
+
+
+  Select MAB of local_ctx
+  Value of true: count: Q value: 1.00000; Exp: 0.00000 (0/0); UCB: 1.00000
+  Value of false: count: Q value: 1.00000; Exp: 0.00000 (0/0); UCB: 1.00000
+  Selected value: true
+
+
+  Select MAB of hoist_mul
+  Value of true: count: Q value: 1.00000; Exp: 0.00000 (0/0); UCB: 1.00000
+  Value of false: count: Q value: 1.00000; Exp: 0.00000 (0/0); UCB: 1.00000
+  Selected value: true
+
+
+  Select MAB of push_ite_bv
+  Value of true: count: Q value: 1.00000; Exp: 0.00000 (0/0); UCB: 1.00000
+  Value of false: count: Q value: 1.00000; Exp: 0.00000 (0/0); UCB: 1.00000
+  Selected value: true
+
+
+  Select MAB of pull_cheap_ite
+  Value of true: count: Q value: 1.00000; Exp: 0.00000 (0/0); UCB: 1.00000
+  Value of false: count: Q value: 1.00000; Exp: 0.00000 (0/0); UCB: 1.00000
+  Selected value: true
+
+Selected Node: [1, 20]
+Selected Strategy ParseTree: (then (using-params simplify :elim_and true :som true :blast_distinct true :flat true :hi_div0 true :local_ctx true :hoist_mul true :push_ite_bv true :pull_cheap_ite true) <Strategy>(QF_NIA))
+Rollout Strategy: (then (using-params simplify :elim_and true :som true :blast_distinct true :flat true :hi_div0 true :local_ctx true :hoist_mul true :push_ite_bv true :pull_cheap_ite true) qfnra-nlsat)
+Final Return: 0.7467105090618134
+
+Simulation 10 starts
+
+  Select at []
+  Value of 0: count: Q value: 0.74659; Exp: 0.53636 (2/10); UCT: 1.28295
+  Value of 1: count: Q value: 0.74671; Exp: 0.53636 (2/10); UCT: 1.28307
+  Value of 2: count: Q value: 0.74644; Exp: 0.53636 (2/10); UCT: 1.28280
+  Value of 3: count: Q value: 0.74674; Exp: 0.53636 (2/10); UCT: 1.28310
+  Value of 5: count: Q value: 0.74584; Exp: 0.75833 (1/10); UCT: 1.50418
+  Selected action 5
+
+  Select MAB of nla2bv_max_bv_size
+  Value of 4: count: Q value: 0.92375; Exp: 0.16643 (1/1); UCB: 1.09018
+  Value of 8: count: Q value: 1.00000; Exp: 5.26554 (0/1); UCB: 6.26554
+  Value of 16: count: Q value: 1.00000; Exp: 5.26554 (0/1); UCB: 6.26554
+  Value of 32: count: Q value: 1.00000; Exp: 5.26554 (0/1); UCB: 6.26554
+  Value of 64: count: Q value: 1.00000; Exp: 5.26554 (0/1); UCB: 6.26554
+  Value of 128: count: Q value: 1.00000; Exp: 5.26554 (0/1); UCB: 6.26554
+  Selected value: 8
+
+
+  Select at [5]
+  Value of 0: count: Q value: 0.00000; Exp: 0.00000 (0/1); UCT: 0.00000
+  Value of 1: count: Q value: 0.00000; Exp: 0.00000 (0/1); UCT: 0.00000
+  Value of 2: count: Q value: 0.00000; Exp: 0.00000 (0/1); UCT: 0.00000
+  Value of 7: count: Q value: 0.00000; Exp: 0.00000 (0/1); UCT: 0.00000
+  Value of 6: count: Q value: 0.00000; Exp: 0.00000 (0/1); UCT: 0.00000
+  Selected action 0
+Selected Node: [5, 0]
+Selected Strategy ParseTree: (or-else (then (using-params nla2bv :nla2bv_max_bv_size 8) <SolvingTactic>(QF_BV)) <Strategy>(QF_NIA))
+Rollout Strategy: (or-else (then (using-params nla2bv :nla2bv_max_bv_size 8) smt) smt)
+Final Return: 0.6959395408630371
+
+Simulation 11 starts
+
+  Select at []
+  Value of 0: count: Q value: 0.74659; Exp: 0.54735 (2/11); UCT: 1.29393
+  Value of 1: count: Q value: 0.74671; Exp: 0.54735 (2/11); UCT: 1.29406
+  Value of 2: count: Q value: 0.74644; Exp: 0.54735 (2/11); UCT: 1.29378
+  Value of 3: count: Q value: 0.74674; Exp: 0.54735 (2/11); UCT: 1.29408
+  Value of 5: count: Q value: 0.74584; Exp: 0.54735 (2/11); UCT: 1.29319
+  Selected action 3
+
+  Select at [3]
+  Value of 50: count: Q value: 0.74674; Exp: 0.41607 (1/2); UCT: 1.16281
+  Value of 51: count: Q value: 0.00000; Exp: 13.16384 (0/2); UCT: 13.16384
+  Value of 52: count: Q value: 0.00000; Exp: 13.16384 (0/2); UCT: 13.16384
+  Selected action 51
+
+  Select MAB of value
+  Value of 712.0: count: Q value: 1.00000; Exp: 0.00000 (0/0); UCB: 1.00000
+  Value of 310.0: count: Q value: 1.00000; Exp: 0.00000 (0/0); UCB: 1.00000
+  Selected value: 712.0
+
+Selected Node: [3, 51]
+Selected Strategy ParseTree: (if (> num-exprs 712.0) <Strategy>(QF_NIA) <Strategy>(QF_NIA))
+Rollout Strategy: (if (> num-exprs 712.0) (then simplify (then card2bv smt)) (then ctx-simplify qfnra-nlsat))
+Final Return: 0.7466415166854858
+
+Simulation 12 starts
+
+  Select at []
+  Value of 0: count: Q value: 0.74659; Exp: 0.55719 (2/12); UCT: 1.30378
+  Value of 1: count: Q value: 0.74671; Exp: 0.55719 (2/12); UCT: 1.30390
+  Value of 2: count: Q value: 0.74644; Exp: 0.55719 (2/12); UCT: 1.30363
+  Value of 3: count: Q value: 0.74674; Exp: 0.45498 (3/12); UCT: 1.20172
+  Value of 5: count: Q value: 0.74584; Exp: 0.55719 (2/12); UCT: 1.30303
+  Selected action 1
+
+  Select at [1]
+  Value of 20: count: Q value: 0.74671; Exp: 0.41607 (1/2); UCT: 1.16278
+  Value of 21: count: Q value: 0.00000; Exp: 13.16384 (0/2); UCT: 13.16384
+  Value of 22: count: Q value: 0.00000; Exp: 13.16384 (0/2); UCT: 13.16384
+  Value of 23: count: Q value: 0.00000; Exp: 13.16384 (0/2); UCT: 13.16384
+  Value of 24: count: Q value: 0.00000; Exp: 13.16384 (0/2); UCT: 13.16384
+  Value of 32: count: Q value: 0.00000; Exp: 13.16384 (0/2); UCT: 13.16384
+  Value of 33: count: Q value: 0.00000; Exp: 13.16384 (0/2); UCT: 13.16384
+  Value of 34: count: Q value: 0.00000; Exp: 13.16384 (0/2); UCT: 13.16384
+  Selected action 21
+
+  Select MAB of push_ite_bv
+  Value of true: count: Q value: 1.00000; Exp: 0.00000 (0/0); UCB: 1.00000
+  Value of false: count: Q value: 1.00000; Exp: 0.00000 (0/0); UCB: 1.00000
+  Selected value: true
+
+Selected Node: [1, 21]
+Selected Strategy ParseTree: (then (using-params propagate-values :push_ite_bv true) <Strategy>(QF_NIA))
+Rollout Strategy: (then (using-params propagate-values :push_ite_bv true) smt)
+Final Return: 0.7453809082508087
+
+Simulation 13 starts
+
+  Select at []
+  Value of 0: count: Q value: 0.74659; Exp: 0.56609 (2/13); UCT: 1.31268
+  Value of 1: count: Q value: 0.74671; Exp: 0.46225 (3/13); UCT: 1.20896
+  Value of 2: count: Q value: 0.74644; Exp: 0.56609 (2/13); UCT: 1.31253
+  Value of 3: count: Q value: 0.74674; Exp: 0.46225 (3/13); UCT: 1.20899
+  Value of 5: count: Q value: 0.74584; Exp: 0.56609 (2/13); UCT: 1.31193
+  Selected action 0
+
+  Select at [0]
+  Value of 10: count: Q value: 0.73535; Exp: 0.41607 (1/2); UCT: 1.15142
+  Value of 11: count: Q value: 0.00000; Exp: 13.16384 (0/2); UCT: 13.16384
+  Selected action 11
+
+  Select MAB of inline_vars
+  Value of true: count: Q value: 1.00000; Exp: 0.00000 (0/0); UCB: 1.00000
+  Value of false: count: Q value: 1.00000; Exp: 0.00000 (0/0); UCB: 1.00000
+  Selected value: true
+
+
+  Select MAB of factor
+  Value of true: count: Q value: 1.00000; Exp: 0.00000 (0/0); UCB: 1.00000
+  Value of false: count: Q value: 1.00000; Exp: 0.00000 (0/0); UCB: 1.00000
+  Selected value: true
+
+
+  Select MAB of seed
+  Value of 0: count: Q value: 1.00000; Exp: 0.00000 (0/0); UCB: 1.00000
+  Value of 5: count: Q value: 1.00000; Exp: 0.00000 (0/0); UCB: 1.00000
+  Value of 10: count: Q value: 1.00000; Exp: 0.00000 (0/0); UCB: 1.00000
+  Value of 15: count: Q value: 1.00000; Exp: 0.00000 (0/0); UCB: 1.00000
+  Value of 20: count: Q value: 1.00000; Exp: 0.00000 (0/0); UCB: 1.00000
+  Value of 25: count: Q value: 1.00000; Exp: 0.00000 (0/0); UCB: 1.00000
+  Selected value: 0
+
+Selected Node: [0, 11]
+Selected Strategy ParseTree: (using-params qfnra-nlsat :inline_vars true :factor true :seed 0)
+Terminal Strategy: no rollout
+Final Return: 0.7467006146907806
+
+Simulation 14 starts
+
+  Select at []
+  Value of 0: count: Q value: 0.74670; Exp: 0.46888 (3/14); UCT: 1.21558
+  Value of 1: count: Q value: 0.74671; Exp: 0.46888 (3/14); UCT: 1.21559
+  Value of 2: count: Q value: 0.74644; Exp: 0.57421 (2/14); UCT: 1.32065
+  Value of 3: count: Q value: 0.74674; Exp: 0.46888 (3/14); UCT: 1.21562
+  Value of 5: count: Q value: 0.74584; Exp: 0.57421 (2/14); UCT: 1.32005
+  Selected action 2
+
+  Select MAB of timeout
+  Value of 2: count: Q value: 0.92393; Exp: 0.20952 (1/2); UCB: 1.13346
+  Value of 4: count: Q value: 0.92392; Exp: 0.20952 (1/2); UCB: 1.13345
+  Value of 8: count: Q value: 1.00000; Exp: 6.62906 (0/2); UCB: 7.62906
+  Value of 16: count: Q value: 1.00000; Exp: 6.62906 (0/2); UCB: 7.62906
+  Selected value: 8
+
+
+  Select at [2]
+  Value of 0: count: Q value: 0.74641; Exp: 0.41607 (1/2); UCT: 1.16248
+  Value of 1: count: Q value: 0.00000; Exp: 13.16384 (0/2); UCT: 13.16384
+  Value of 5: count: Q value: 0.00000; Exp: 13.16384 (0/2); UCT: 13.16384
+  Selected action 1
+Selected Node: [2, 1]
+Selected Strategy ParseTree: (or-else (try-for (then <PreprocessTactic>(QF_NIA) <Strategy>(QF_NIA)) 8000) <Strategy>(QF_NIA))
+Rollout Strategy: (or-else (try-for (then propagate-values smt) 8000) qfnra-nlsat)
