@@ -1,7 +1,7 @@
 {
   "logic": "QF_NIA",
-  "training_dir": "/Users/zhengyanglumacmini/Desktop/AlphaSMT/Experiments/Benchmarks/test1",
-  "validation_dir": "/Users/zhengyanglumacmini/Desktop/AlphaSMT/Experiments/Benchmarks/test1",
+  "training_dir": "Experiments/Benchmarks/test1",
+  "validation_dir": "Experiments/Benchmarks/test1",
   "simulation_number": 1000,
   "strategy_2b_validated": 3,
   "timeout": 24,

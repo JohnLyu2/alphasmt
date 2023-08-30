@@ -9,6 +9,7 @@ class StrategyNonterm(DerivationNode):
         self.logic = logic
         self.timeout = timeout
         self.timeoutStatus = timeout_status # -1: itself a timed strategy; otherwise: number of timed strategies already tried beforehand
+        self.branchStatus = branch_status # -1: no further branching allowed; otherwise: depth of branching (0 means root)
         self.bv1blast = bv1blast # for QF_BV, is bv1blast applicable; for other logics, it is meaningless
         self.action_dict = {
             0: self.applySolveRule,  # <Strategy> := <SolvingTactic>
@@ -33,6 +34,9 @@ class StrategyNonterm(DerivationNode):
         elif self.expandType == 2:
             returnStr = f"(or-else (try-for {self.children[0]} {self.children[0].timeout * 1000}) {self.children[1]})"
             return returnStr
+        elif self.expandType == 3:
+            returnStr = f"(if (> {self.children[0]}) {self.children[1]} {self.children[2]})"
+            return returnStr
         elif self.expandType == 5:
             returnStr = f"(or-else (then {self.children[0]} {self.children[1]}) {self.children[2]})"
             return returnStr
@@ -52,6 +56,8 @@ class StrategyNonterm(DerivationNode):
         actions = [0, 1]
         if (not rollout) and self.timeoutStatus >= 0 and self.timeoutStatus < MAX_TIMEOUT_STRAT:
             actions.append(2)
+        if (not rollout) and self.branchStatus >= 0 and self.branchStatus < MAX_BRANCH_DEPTH:
+            actions.append(3)
         if (not rollout) and (self.logic == "QF_NIA" or self.logic == "QF_NRA"):
             actions.append(5)
         if (self.logic == "QF_BV"):
@@ -62,7 +68,7 @@ class StrategyNonterm(DerivationNode):
 
     def applyThenRule(self, params):
         self.children.append(PreprocessNonterm(self.logic, self))
-        self.children.append(StrategyNonterm(self.logic, self.timeout, self.timeoutStatus, self,bv1blast=self.bv1blast))
+        self.children.append(StrategyNonterm(self.logic, self.timeout, self.timeoutStatus, branch_status=-1, parent=self, bv1blast=self.bv1blast))
 
     def applySolveRule(self, params):
         self.children.append(SolvingNonterm(self.logic, self)) 
@@ -72,33 +78,29 @@ class StrategyNonterm(DerivationNode):
         tryTimeout = params["timeout"]
         remainTimeout = self.timeout - tryTimeout
         assert(remainTimeout > 0)
-        self.children.append(StrategyNonterm(self.logic, tryTimeout, -1, parent=self, bv1blast=self.bv1blast))
-        self.children.append(StrategyNonterm(self.logic, remainTimeout, self.timeoutStatus+1, parent=self, bv1blast=self.bv1blast))
+        self.children.append(StrategyNonterm(self.logic, tryTimeout, -1, branch_status=-1, parent=self, bv1blast=self.bv1blast))
+        self.children.append(StrategyNonterm(self.logic, remainTimeout, self.timeoutStatus+1, branch_status=-1, parent=self, bv1blast=self.bv1blast))
 
     def applyIfRule(self, params):
-        self.children.append()
-        self.children.append(StrategyNonterm(self.logic, self.timeout, self.timeoutStatus, self, bv1blast=self.bv1blast))
-        self.children.append(StrategyNonterm(self.logic, self.timeout, self.timeoutStatus, self, bv1blast=self.bv1blast))
-
-
+        assert(self.branchStatus != -1 and self.branchStatus < MAX_BRANCH_DEPTH)
+        self.children.append(ProbeSelectorNonterm(parent=self))
+        self.children.append(StrategyNonterm(self.logic, self.timeout, self.timeoutStatus, self.branchStatus+1, parent=self, bv1blast=self.bv1blast))
+        self.children.append(StrategyNonterm(self.logic, self.timeout, self.timeoutStatus, self.branchStatus+1, parent=self, bv1blast=self.bv1blast))
 
     def apply2BVRule(self, params):
         self.children.append(TacticTerminal("nla2bv", params, self))
-        self.children.append(StrategyNonterm("QF_BV", self.timeout, self.timeoutStatus, self)) # use <strategy> but with different tactic sets
-        self.children.append(StrategyNonterm(self.logic, self.timeout, self.timeoutStatus, self))
+        self.children.append(StrategyNonterm("QF_BV", self.timeout, self.timeoutStatus, branch_status=-1, parent=self)) # use <strategy> but with different tactic sets
+        self.children.append(StrategyNonterm(self.logic, self.timeout, self.timeoutStatus, branch_status=-1, parent=self))
 
     def applyBV1BlastRule(self, params):
         self.children.append(TacticTerminal("bv1-blast", params, self))
-        self.children.append(StrategyNonterm(logic="QF_BV", timeout=self.timeout, timeout_status=self.timeoutStatus, parent=self, bv1blast=False))
-        self.children.append(StrategyNonterm(logic="QF_BV", timeout=self.timeout, timeout_status=self.timeoutStatus, parent=self, bv1blast=False))
+        self.children.append(StrategyNonterm(logic="QF_BV", timeout=self.timeout, timeout_status=self.timeoutStatus, branch_status=-1, parent=self, bv1blast=False))
+        self.children.append(StrategyNonterm(logic="QF_BV", timeout=self.timeout, timeout_status=self.timeoutStatus, branch_status=-1, parent=self, bv1blast=False))
 
     def applyBitBlastRule(self, params):
         self.children.append(TacticTerminal(name="simplify", params=None, parent=self))
         self.children.append(TacticTerminal(name="bit-blast", params=params, parent=self)) # now the parameter for this action is for the tactic bit-blaster
-        self.children.append(StrategyNonterm(logic="SAT", timeout=self.timeout, timeout_status=-1, parent=self, bv1blast=self.bv1blast)) # for sat formula do not introduce timeout
-
-
-
+        self.children.append(StrategyNonterm(logic="SAT", timeout=self.timeout, timeout_status=-1, branch_status=-1, parent=self, bv1blast=self.bv1blast)) # for sat formula do not introduce timeout
 
     # def clone(self):
     #     childrenCp = self.childrenClone()
@@ -109,7 +111,7 @@ class DerivationAST():
     def __init__(self, logic, timeout, root = None):
         self.logic = logic
         if root is None:
-            self.root = StrategyNonterm(logic, timeout, 0, None)
+            self.root = StrategyNonterm(logic, timeout, timeout_status = 0, branch_status = 0, parent = None)
         else:
             self.root = root
 

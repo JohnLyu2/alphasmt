@@ -217,7 +217,7 @@ class MCTS_RUN():
 
     def _oneSimulation(self):
         # now does not consider the root is not the game start
-        self.env = StrategyGame(self.trainingSet, self.logic, self.timeout, self.batchSize, test_factor=self.testFactor)
+        self.env = StrategyGame(self.trainingSet, self.logic, self.timeout, self.probeDict, self.batchSize, test_factor=self.testFactor)
         selectNode, searchPath = self._select()
         self.sim_log.info("Selected Node: " + str(selectNode))
         self.sim_log.info("Selected Strategy ParseTree: " + str(self.env))

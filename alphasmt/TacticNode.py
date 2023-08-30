@@ -37,7 +37,7 @@ class ProbeTerminal(DerivationNode):
         self.value = value
 
     def __str__(self):
-        return f"({self.name} {self.value})"
+        return f"{self.name} {self.value}"
 
     def isTerminal(self):
         return True
@@ -67,7 +67,8 @@ class ProbeSelectorNonterm(DerivationNode):
         assert (self.isLeaf())
         assert (action in self.legalActions())
         probe_name = self.action_dict[action]
-        selected = ProbeTerminal(probe_name, params, self)
+        value = params['value']
+        selected = ProbeTerminal(probe_name, value, self)
         self.children.append(selected)
         self.expandType = action
 

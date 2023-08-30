@@ -5,9 +5,10 @@ from alphasmt.Evaluator import Z3StrategyEvaluator
 
 
 class StrategyGame():
-    def __init__(self, training_set, logic, timeout, batch_size, test_factor):
+    def __init__(self, training_set, logic, timeout, probe_dict, batch_size, test_factor):
         self.strategyAST = DerivationAST(logic, timeout)
         self.simulator = Z3StrategyEvaluator(training_set, timeout, batch_size, test_factor) # shallow copy for clone
+        self.probes = probe_dict
 
     def __str__(self) -> str:
         return str(self.strategyAST)
@@ -30,7 +31,11 @@ class StrategyGame():
             actions = self.legalActions(rollout = True)
             action = random.choice(actions)
             # action = actions[0]
-            self.step(action, None)
+            params = None
+            if action in self.probes.keys():
+                value = self.probes[action]['value'][1]
+                params = {'value': value}
+            self.step(action, params)
 
     def getValue(self, database):
         assert (self.isTerminal())
