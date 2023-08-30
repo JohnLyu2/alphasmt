@@ -1,0 +1,13 @@
+{
+  "logic": "QF_NIA",
+  "training_dir": "benchmarks/test1",
+  "validation_dir": "benchmarks/test1",
+  "simulation_number": 1000,
+  "strategy_2b_validated": 3,
+  "timeout": 24,
+  "batch_size": 2,
+  "c_uct": 0.5,
+  "c_ucb": 0.2,
+  "mab_alpha": 0.3,
+  "testing_factor": 24
+}
