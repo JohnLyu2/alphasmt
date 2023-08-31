@@ -78,8 +78,8 @@ class StrategyNonterm(DerivationNode):
         tryTimeout = params["timeout"]
         remainTimeout = self.timeout - tryTimeout
         assert(remainTimeout > 0)
-        self.children.append(StrategyNonterm(self.logic, tryTimeout, -1, branch_status=-1, parent=self, bv1blast=self.bv1blast))
-        self.children.append(StrategyNonterm(self.logic, remainTimeout, self.timeoutStatus+1, branch_status=-1, parent=self, bv1blast=self.bv1blast))
+        self.children.append(StrategyNonterm(self.logic, tryTimeout, -1, branch_status=self.branchStatus, parent=self, bv1blast=self.bv1blast))
+        self.children.append(StrategyNonterm(self.logic, remainTimeout, self.timeoutStatus+1, branch_status=self.branchStatus, parent=self, bv1blast=self.bv1blast))
 
     def applyIfRule(self, params):
         assert(self.branchStatus != -1 and self.branchStatus < MAX_BRANCH_DEPTH)
@@ -90,12 +90,12 @@ class StrategyNonterm(DerivationNode):
     def apply2BVRule(self, params):
         self.children.append(TacticTerminal("nla2bv", params, self))
         self.children.append(StrategyNonterm("QF_BV", self.timeout, self.timeoutStatus, branch_status=-1, parent=self)) # use <strategy> but with different tactic sets
-        self.children.append(StrategyNonterm(self.logic, self.timeout, self.timeoutStatus, branch_status=-1, parent=self))
+        self.children.append(StrategyNonterm(self.logic, self.timeout, self.timeoutStatus, branch_status=self.branchStatus, parent=self))
 
     def applyBV1BlastRule(self, params):
         self.children.append(TacticTerminal("bv1-blast", params, self))
         self.children.append(StrategyNonterm(logic="QF_BV", timeout=self.timeout, timeout_status=self.timeoutStatus, branch_status=-1, parent=self, bv1blast=False))
-        self.children.append(StrategyNonterm(logic="QF_BV", timeout=self.timeout, timeout_status=self.timeoutStatus, branch_status=-1, parent=self, bv1blast=False))
+        self.children.append(StrategyNonterm(logic="QF_BV", timeout=self.timeout, timeout_status=self.timeoutStatus, branch_status=self.branchStatus, parent=self, bv1blast=False))
 
     def applyBitBlastRule(self, params):
         self.children.append(TacticTerminal(name="simplify", params=None, parent=self))
