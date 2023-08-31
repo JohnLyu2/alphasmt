@@ -62,6 +62,7 @@ def main():
     val_path = config['validation_dir']
     num_val_strat = config['strategy_2b_validated']
     sim_num = config['simulation_number']
+    is_mean_est = config['is_mean_est']
     timeout = config['timeout']
     batchSize = config['batch_size']
     c_uct =  config['c_uct'] # for mcts select
@@ -78,7 +79,7 @@ def main():
 
     # train
     log.info("MCTS Simulations Start")
-    run = MCTS_RUN(sim_num, train_path, logic, timeout, batchSize, log_folder, c_uct=c_uct, c_ucb=c_ucb, alpha=mab_alpha, test_factor=test_factor, probe_dict=trainProbeStatDict)
+    run = MCTS_RUN(sim_num, is_mean_est, train_path, logic, timeout, batchSize, log_folder, c_uct=c_uct, c_ucb=c_ucb, alpha=mab_alpha, test_factor=test_factor, probe_dict=trainProbeStatDict)
     run.start()
     strat_candidates = run.bestNStrategies(num_val_strat)
     log.info(f"Simulations done. {num_val_strat} strategies are selected.")

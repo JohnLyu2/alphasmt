@@ -9,7 +9,7 @@ log_handler = logging.StreamHandler()
 log_handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(message)s','%Y-%m-%d %H:%M:%S'))
 log.addHandler(log_handler)
 
-INIT_Q = 1
+INIT_Q = 1 # not important if not exponential recency-weighted average
 
 # to-do: move to somewhere else later/change it into inputs
 PARAMS = {
@@ -46,12 +46,13 @@ PARAMS = {
 }
 
 class MCTSNode():
-    def __init__(self, logger, c_ucb, alpha, probe_dict, action_history=[]):
+    def __init__(self, is_mean, logger, c_ucb, alpha, probe_dict, action_history=[]):
+        self.isMean = is_mean
         self.c_ucb = c_ucb
         self.alpha = alpha
         self.visitCount = 0
         self.actionHistory = action_history # 
-        self.valueLst = []
+        self.valueEst = 0
         self.children = {}
         self.reward = 0  # always 0 for now
         self.probeDict = probe_dict
@@ -95,6 +96,7 @@ class MCTSNode():
         self.logger.debug(f"  Value of {action}: count: Q value: {qScore:.05f}; Exp: {exploreScore:.05f} ({visitCount}/{self.visitCount}); UCB: {ucb:.05f}")
         return ucb
 
+    # rename parameter values; easily confuesed with the value of a node
     def _selectMAB(self, param, remain_time):
         MABdict = self.MABs[param]
         selected = None
@@ -117,27 +119,32 @@ class MCTSNode():
             self.selected[param] = selectV
         return self.selected
 
-    def backupMABs(self, returnV):
+    def backupMABs(self, reward):
         for param in self.params.keys():
             MABdict = self.MABs[param]
             selectedV = self.selected[param]
+
+            if self.isMean:
+                MABdict[selectedV][1] = (MABdict[selectedV][1] * MABdict[selectedV][0] + reward) / (MABdict[selectedV][0] + 1)
+            else:
+                MABdict[selectedV][1] = max(MABdict[selectedV][1], reward)
             MABdict[selectedV][0] += 1
-            MABdict[selectedV][1] = MABdict[selectedV][1] + self.alpha * (returnV - MABdict[selectedV][1]) # exponential recency-weighted average
             self.selected[param] = None
 
 
-    def value(self):
-        if self.visitCount == 0:  # will this be called anytime?
-            return 0
-        return max(self.valueLst)
+    # def value(self):
+    #     if self.visitCount == 0:  # will this be called anytime?
+    #         return 0
+    #     return max(self.valueLst)
 
 # A MCTS run starting at a particular node as root; this framework only works for deterministric state transition
 
 
 class MCTS_RUN():
-    def __init__(self, num_simulations, training_set, logic, timeout, batch_size, log_folder, c_uct, c_ucb, alpha, test_factor, probe_dict, root = None):
+    def __init__(self, num_simulations, is_mean, training_set, logic, timeout, batch_size, log_folder, c_uct, c_ucb, alpha, test_factor, probe_dict, root = None):
         # to-do: pack some into config
         self.numSimulations = num_simulations
+        self.isMean = is_mean
         self.discount = 1  # now set to 1
         self.c_uct = c_uct
         self.c_ucb = c_ucb
@@ -153,14 +160,12 @@ class MCTS_RUN():
         self.sim_log.addHandler(simlog_handler)
         self.testFactor = test_factor
         self.probeDict = probe_dict
-        if not root: root = MCTSNode(self.sim_log, c_ucb, alpha, self.probeDict)
+        if not root: root = MCTSNode(self.isMean, self.sim_log, c_ucb, alpha, self.probeDict)
         self.root = root
         self.bestReward = -1
 
     def _uct(self, childNode, parentNode, action):
-        valueScore = 0
-        if childNode.visitCount > 0:
-            valueScore = childNode.reward + self.discount * childNode.value()
+        valueScore = childNode.reward + self.discount * childNode.valueEst
         exploreScore = self.c_uct * \
             math.sqrt(math.log(parentNode.visitCount) /
                       (childNode.visitCount + 0.001))
@@ -196,12 +201,12 @@ class MCTS_RUN():
         return node, searchPath
 
     @staticmethod
-    def _expandNode(node, actions, reward, c_ucb, alpha, probe_dict, logger):
+    def _expandNode(node, actions, reward, is_mean, c_ucb, alpha, probe_dict, logger):
         node.reward = reward
         for action in actions:
             history = copy.deepcopy(node.actionHistory)
             history.append(action)
-            node.children[action] = MCTSNode(logger, c_ucb, alpha, probe_dict, history)
+            node.children[action] = MCTSNode(is_mean, logger, c_ucb, alpha, probe_dict, history)
 
     def _rollout(self):
         self.env.rollout()
@@ -209,9 +214,12 @@ class MCTS_RUN():
     def _backup(self, searchPath, sim_value):
         value = sim_value
         for node in reversed(searchPath):
-            node.valueLst.append(value)
+            if self.isMean:
+                node.valueEst = (node.valueEst * node.visitCount + value) / (node.visitCount + 1)
+            else:
+                node.valueEst = max(node.valueEst, value)
             node.visitCount += 1
-            value = node.reward + self.discount * value
+            value = node.reward + self.discount * value # not applicable now
             if node.hasParamMABs():
                 node.backupMABs(value)
 
@@ -227,7 +235,7 @@ class MCTS_RUN():
         else:
             actions = self.env.legalActions()
             # now reward is always 0 at each step
-            MCTS_RUN._expandNode(selectNode, actions, 0, self.c_ucb, self.alpha, self.probeDict, self.sim_log)
+            MCTS_RUN._expandNode(selectNode, actions, 0, self.isMean, self.c_ucb, self.alpha, self.probeDict, self.sim_log)
             self._rollout()
             self.sim_log.info("Rollout Strategy: " + str(self.env))
             value = self.env.getValue(self.resDatabase)

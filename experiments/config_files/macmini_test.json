@@ -3,6 +3,7 @@
   "training_dir": "benchmarks/test1",
   "validation_dir": "benchmarks/test1",
   "simulation_number": 1000,
+  "is_mean_est": true,
   "strategy_2b_validated": 3,
   "timeout": 24,
   "batch_size": 2,
