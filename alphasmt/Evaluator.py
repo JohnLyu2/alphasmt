@@ -1,3 +1,4 @@
+import os
 import pathlib
 import threading
 import subprocess
@@ -13,15 +14,18 @@ log.addHandler(log_handler)
 
 class Z3Runner(threading.Thread):
     """ Runner which executes a single strategy on a single formula by calling Z3 in shell"""
-    def __init__(self, smt_file, timeout, id, strategy=None):
+    def __init__(self, smt_file, timeout, id, strategy=None, tmp_dir="/tmp/"):
         threading.Thread.__init__(self)
         self.smt_file = smt_file
         self.timeout = timeout  # not used now
         self.strategy = strategy
         self.id = id
+        self.tmpDir = tmp_dir
 
         if self.strategy is not None:
-            self.new_file_name = f"/tmp/tmp_{id}.smt2"
+            if not os.path.exists(self.tmpDir): os.makedirs(self.tmpDir)
+            self.new_file_name = os.path.join(self.tmpDir, f"tmp_{id}.smt2")
+            # self.new_file_name = f"/tmp/tmp_{id}.smt2"
             self.tmp_file = open(self.new_file_name, 'w')
             with open(self.smt_file, 'r') as f:
                 for line in f:
@@ -72,7 +76,7 @@ class Z3Runner(threading.Thread):
         return self.id, res, rlimit, self.time_after - self.time_before
 
 class Z3StrategyEvaluator():
-    def __init__(self, benchmark_dir, timeout, batch_size, test_factor=1):
+    def __init__(self, benchmark_dir, timeout, batch_size, test_factor=1, tmp_dir="/tmp/"):
         self.benchmarkDir = benchmark_dir
         self.benchmarkLst = [str(p) for p in sorted(
             list(pathlib.Path(self.benchmarkDir).rglob(f"*.smt2")))]
@@ -80,6 +84,7 @@ class Z3StrategyEvaluator():
         self.timeout = int(timeout/test_factor)
         assert (self.timeout > 0)
         self.batchSize = batch_size
+        self.tmpDir = tmp_dir
     
     def getBenchmarkSize(self):
         return len(self.benchmarkLst)
@@ -96,7 +101,7 @@ class Z3StrategyEvaluator():
             threads = []
             for id in batch_instance_ids:
                 smtfile = self.benchmarkLst[id]
-                runnerThread = Z3Runner(smtfile, self.timeout, id, strat_str)
+                runnerThread = Z3Runner(smtfile, self.timeout, id, strat_str, self.tmpDir)
                 runnerThread.start()
                 threads.append(runnerThread)
             time_start = time.time()

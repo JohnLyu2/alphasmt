@@ -69,6 +69,7 @@ def main():
     c_ucb =  config['c_ucb'] # for parameter mab
     mab_alpha =  config['mab_alpha'] # for parameter mab
     test_factor = config['testing_factor']
+    tmp_folder = config['temp_folder']
 
     log_folder = f"experiments/results/out-{datetime.datetime.now():%Y-%m-%d_%H-%M-%S}/"
     assert(not os.path.exists(log_folder))
@@ -79,7 +80,7 @@ def main():
 
     # train
     log.info("MCTS Simulations Start")
-    run = MCTS_RUN(sim_num, is_mean_est, train_path, logic, timeout, batchSize, log_folder, c_uct=c_uct, c_ucb=c_ucb, alpha=mab_alpha, test_factor=test_factor, probe_dict=trainProbeStatDict)
+    run = MCTS_RUN(sim_num, is_mean_est, train_path, logic, timeout, batchSize, log_folder, c_uct=c_uct, c_ucb=c_ucb, alpha=mab_alpha, test_factor=test_factor, probe_dict=trainProbeStatDict, tmp_folder=tmp_folder)
     run.start()
     strat_candidates = run.bestNStrategies(num_val_strat)
     log.info(f"Simulations done. {num_val_strat} strategies are selected.")
