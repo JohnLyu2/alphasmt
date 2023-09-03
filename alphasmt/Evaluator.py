@@ -5,6 +5,7 @@ import subprocess
 import shlex
 import time
 import logging
+import csv
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.INFO)
@@ -25,7 +26,6 @@ class Z3Runner(threading.Thread):
         if self.strategy is not None:
             if not os.path.exists(self.tmpDir): os.makedirs(self.tmpDir)
             self.new_file_name = os.path.join(self.tmpDir, f"tmp_{id}.smt2")
-            # self.new_file_name = f"/tmp/tmp_{id}.smt2"
             self.tmp_file = open(self.new_file_name, 'w')
             with open(self.smt_file, 'r') as f:
                 for line in f:
@@ -51,7 +51,7 @@ class Z3Runner(threading.Thread):
                 self.join()
             except OSError:
                 pass
-            return self.id, None, None, None
+            return self.id, None, None, None, self.smt_file
 
         out, err = self.p.communicate()
 
@@ -60,7 +60,7 @@ class Z3Runner(threading.Thread):
 
         if res.startswith('(error'):
             log.warn(f"Invalid strategy: {self.strategy}\n{res}")
-            return self.id, None, None, None
+            return self.id, None, None, None, self.smt_file
 
         rlimit = None
         for line in lines:
@@ -73,10 +73,10 @@ class Z3Runner(threading.Thread):
         if res == 'unknown':
             res = None
 
-        return self.id, res, rlimit, self.time_after - self.time_before
+        return self.id, res, rlimit, self.time_after - self.time_before, self.smt_file
 
 class Z3StrategyEvaluator():
-    def __init__(self, benchmark_dir, timeout, batch_size, test_factor=1, tmp_dir="/tmp/"):
+    def __init__(self, benchmark_dir, timeout, batch_size, test_factor=1, tmp_dir="/tmp/", is_write_res=False, res_path=None):
         self.benchmarkDir = benchmark_dir
         self.benchmarkLst = [str(p) for p in sorted(
             list(pathlib.Path(self.benchmarkDir).rglob(f"*.smt2")))]
@@ -85,6 +85,8 @@ class Z3StrategyEvaluator():
         assert (self.timeout > 0)
         self.batchSize = batch_size
         self.tmpDir = tmp_dir
+        self.isWriteRes = is_write_res
+        self.resPath = res_path
     
     def getBenchmarkSize(self):
         return len(self.benchmarkLst)
@@ -108,8 +110,8 @@ class Z3StrategyEvaluator():
             for task in threads:
                 time_left = max(0, self.timeout - (time.time() - time_start))
                 task.join(time_left)
-                id, resTask, rlimitTask, timeTask = task.collect()
-                results[id] = (resTask, rlimitTask, timeTask)
+                id, resTask, rlimitTask, timeTask, pathTask = task.collect()
+                results[id] = (resTask, rlimitTask, timeTask, pathTask)
         assert len(results) == size
         for id in results:
             # to-do: also check for result correctness
@@ -117,6 +119,12 @@ class Z3StrategyEvaluator():
                 numSolved += 1
                 rlimitSolved += results[id][1]
                 timeSolved += results[id][2]
+        if self.isWriteRes:
+            with open(self.resPath, 'w') as csvfile:
+                csvwriter = csv.writer(csvfile)
+                csvwriter.writerow(["id", "path", "result", "rlimit", "time"]) # write header
+                for id in results:
+                    csvwriter.writerow([id, results[id][3], results[id][0], results[id][1], results[id][2]])
         return (numSolved, rlimitSolved, timeSolved)
     
     @staticmethod
