@@ -9,7 +9,7 @@ log_handler = logging.StreamHandler()
 log_handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(message)s','%Y-%m-%d %H:%M:%S'))
 log.addHandler(log_handler)
 
-INIT_Q = 1 # not important if not exponential recency-weighted average
+INIT_Q = 0 
 
 # to-do: move to somewhere else later/change it into inputs
 PARAMS = {
@@ -93,7 +93,7 @@ class MCTSNode():
             math.sqrt(math.log(self.visitCount + 1) / # check ucb 1
                       (visitCount + 0.001))
         ucb = qScore + exploreScore
-        self.logger.debug(f"  Value of {action}: count: Q value: {qScore:.05f}; Exp: {exploreScore:.05f} ({visitCount}/{self.visitCount}); UCB: {ucb:.05f}")
+        self.logger.debug(f"  Value of {action}: Q value: {qScore:.05f}; Exp: {exploreScore:.05f} ({visitCount}/{self.visitCount}); UCB: {ucb:.05f}")
         return ucb
 
     # rename parameter values; easily confuesed with the value of a node
@@ -171,7 +171,7 @@ class MCTS_RUN():
             math.sqrt(math.log(parentNode.visitCount) /
                       (childNode.visitCount + 0.001))
         uct = valueScore + exploreScore
-        self.sim_log.debug(f"  Value of {action}: count: Q value: {valueScore:.05f}; Exp: {exploreScore:.05f} ({childNode.visitCount}/{parentNode.visitCount}); UCT: {uct:.05f}")
+        self.sim_log.debug(f"  Value of {action}: Q value: {valueScore:.05f}; Exp: {exploreScore:.05f} ({childNode.visitCount}/{parentNode.visitCount}); UCT: {uct:.05f}")
         return uct
 
     def _select(self):
