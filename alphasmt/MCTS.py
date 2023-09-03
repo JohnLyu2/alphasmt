@@ -108,7 +108,7 @@ class MCTSNode():
             if ucb > bestUCB:
                 bestUCB = ucb
                 selected = valueCandidate
-        assert(bestUCB > 0)
+        assert(bestUCB >= 0)
         return selected
 
     def selectMABs(self, remain_time):
