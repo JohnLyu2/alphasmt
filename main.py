@@ -7,9 +7,7 @@ import pathlib
 import random
 from z3 import *
 
-from alphasmt.AST import DerivationAST
-from alphasmt.MCTS import MCTSNode, MCTS_RUN
-from alphasmt.Environment import StrategyGame
+from alphasmt.MCTS import MCTS_RUN
 from alphasmt.Evaluator import Z3StrategyEvaluator
 
 log = logging.getLogger(__name__)
@@ -68,7 +66,7 @@ def main():
     batchSize = config['batch_size']
     c_uct =  config['c_uct'] # for mcts select
     c_ucb =  config['c_ucb'] # for parameter mab
-    mab_alpha =  config['mab_alpha'] # for parameter mab
+    # mab_alpha =  config['mab_alpha'] # for parameter mab
     test_factor = config['testing_factor']
     tmp_folder = config['temp_folder']
     random_seed = config['random_seed']
@@ -83,7 +81,7 @@ def main():
 
     # train
     log.info("MCTS Simulations Start")
-    run = MCTS_RUN(sim_num, is_mean_est, train_path, logic, timeout, batchSize, log_folder, c_uct=c_uct, c_ucb=c_ucb, alpha=mab_alpha, test_factor=test_factor, probe_dict=trainProbeStatDict, tmp_folder=tmp_folder)
+    run = MCTS_RUN(sim_num, is_mean_est, train_path, logic, timeout, batchSize, log_folder, c_uct=c_uct, c_ucb=c_ucb, test_factor=test_factor, probe_dict=trainProbeStatDict, tmp_folder=tmp_folder)
     run.start()
     strat_candidates = run.bestNStrategies(num_val_strat)
     log.info(f"Simulations done. {num_val_strat} strategies are selected.")

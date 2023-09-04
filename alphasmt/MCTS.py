@@ -46,10 +46,10 @@ PARAMS = {
 }
 
 class MCTSNode():
-    def __init__(self, is_mean, logger, c_ucb, alpha, probe_dict, action_history=[]):
+    def __init__(self, is_mean, logger, c_ucb, probe_dict, action_history=[]):
         self.isMean = is_mean
         self.c_ucb = c_ucb
-        self.alpha = alpha
+        # self.alpha = alpha
         self.visitCount = 0
         self.actionHistory = action_history # 
         self.valueEst = 0
@@ -141,14 +141,14 @@ class MCTSNode():
 
 
 class MCTS_RUN():
-    def __init__(self, num_simulations, is_mean, training_set, logic, timeout, batch_size, log_folder, c_uct, c_ucb, alpha, test_factor, probe_dict, tmp_folder, root = None):
+    def __init__(self, num_simulations, is_mean, training_set, logic, timeout, batch_size, log_folder, c_uct, c_ucb, test_factor, probe_dict, tmp_folder, root = None):
         # to-do: pack some into config
         self.numSimulations = num_simulations
         self.isMean = is_mean
         self.discount = 1  # now set to 1
         self.c_uct = c_uct
         self.c_ucb = c_ucb
-        self.alpha = alpha
+        # self.alpha = alpha
         self.trainingSet = training_set
         self.logic = logic
         self.timeout = timeout
@@ -161,7 +161,7 @@ class MCTS_RUN():
         self.testFactor = test_factor
         self.probeDict = probe_dict
         self.tmpFolder = tmp_folder
-        if not root: root = MCTSNode(self.isMean, self.sim_log, c_ucb, alpha, self.probeDict)
+        if not root: root = MCTSNode(self.isMean, self.sim_log, c_ucb, self.probeDict)
         self.root = root
         self.bestReward = -1
 
@@ -201,13 +201,12 @@ class MCTS_RUN():
             self.env.step(selected, params)
         return node, searchPath
 
-    @staticmethod
-    def _expandNode(node, actions, reward, is_mean, c_ucb, alpha, probe_dict, logger):
+    def _expandNode(self, node, actions, reward):
         node.reward = reward
         for action in actions:
             history = copy.deepcopy(node.actionHistory)
             history.append(action)
-            node.children[action] = MCTSNode(is_mean, logger, c_ucb, alpha, probe_dict, history)
+            node.children[action] = MCTSNode(self.isMean, self.sim_log, self.c_ucb, self.probeDict, history)
 
     def _rollout(self):
         self.env.rollout()
@@ -236,7 +235,7 @@ class MCTS_RUN():
         else:
             actions = self.env.legalActions()
             # now reward is always 0 at each step
-            MCTS_RUN._expandNode(selectNode, actions, 0, self.isMean, self.c_ucb, self.alpha, self.probeDict, self.sim_log)
+            self._expandNode(selectNode, actions, 0)
             self._rollout()
             self.sim_log.info("Rollout Strategy: " + str(self.env))
             value = self.env.getValue(self.resDatabase)
