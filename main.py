@@ -5,6 +5,7 @@ import json
 import datetime
 import pathlib
 import random
+import time
 from z3 import *
 
 from alphasmt.MCTS import MCTS_RUN
@@ -51,6 +52,7 @@ def createProbeStatDict(benchmark_directory):
     return probeStats
 
 def main():
+    startTime = time.time()
     parser = argparse.ArgumentParser()
     parser.add_argument('json_config', type=str, help='The experiment configuration file in json')
     configJsonPath = parser.parse_args()
@@ -86,6 +88,7 @@ def main():
     strat_candidates = run.bestNStrategies(num_val_strat)
     log.info(f"Simulations done. {num_val_strat} strategies are selected.")
 
+    validStartTime = time.time()
     # validate
     val_log = logging.getLogger("validation")
     val_log.setLevel(logging.INFO)
@@ -109,6 +112,8 @@ def main():
          bestStrat = strat
 
     log.info(f"Best Strategy found: \n{bestStrat}")
+    endTime = time.time()
+    log.info(f"MCTS Time: {validStartTime - startTime:.01f}s; Valid Time: {endTime - validStartTime:.01f}s; Total Time: {endTime - startTime:.01f}s")
     finalStratPath = f"{log_folder}/final_strategy.txt"
     with open(finalStratPath, 'w') as f:
        f.write(bestStrat)
