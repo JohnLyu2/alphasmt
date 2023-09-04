@@ -4,6 +4,7 @@ import argparse
 import json
 import datetime
 import pathlib
+import random
 from z3 import *
 
 from alphasmt.AST import DerivationAST
@@ -70,6 +71,8 @@ def main():
     mab_alpha =  config['mab_alpha'] # for parameter mab
     test_factor = config['testing_factor']
     tmp_folder = config['temp_folder']
+    random_seed = config['random_seed']
+    random.seed(random_seed)
 
     log_folder = f"experiments/results/out-{datetime.datetime.now():%Y-%m-%d_%H-%M-%S}/"
     assert(not os.path.exists(log_folder))

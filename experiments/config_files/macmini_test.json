@@ -11,5 +11,6 @@
   "c_ucb": 0.2,
   "mab_alpha": 0.3,
   "testing_factor": 24,
-  "temp_folder": "/tmp/"
+  "temp_folder": "/tmp/",
+  "random_seed": 0
 }
