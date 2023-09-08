@@ -5,9 +5,9 @@ from alphasmt.Evaluator import Z3StrategyEvaluator
 
 
 class StrategyGame():
-    def __init__(self, training_set, logic, timeout, probe_dict, batch_size, test_factor, tmp_dir):
+    def __init__(self, training_lst, logic, timeout, probe_dict, batch_size, test_factor, tmp_dir):
         self.strategyAST = DerivationAST(logic, timeout)
-        self.simulator = Z3StrategyEvaluator(training_set, timeout, batch_size, test_factor, tmp_dir) # shallow copy for clone
+        self.simulator = Z3StrategyEvaluator(training_lst, timeout, batch_size, test_factor, tmp_dir) # shallow copy for clone
         self.probes = probe_dict
 
     def __str__(self) -> str:

@@ -1,5 +1,6 @@
 import os
 import csv
+import pathlib
 import sys
 sys.path.append('..')
 
@@ -19,6 +20,8 @@ def main():
   test_dir = "/Users/zhengyanglumacmini/Desktop/AlphaSMT/benchmarks/test1"
 
 
+
+  test_lst = [str(p) for p in sorted(list(pathlib.Path(test_dir).rglob(f"*.smt2")))]
   res_csv = os.path.join(res_dir, "res.csv")
   with open(res_csv, 'w') as f:
     csvwriter = csv.writer(f)
@@ -29,7 +32,7 @@ def main():
         strat_file = strat_files[solver]
         strat = open(strat_file, 'r').read()
       csv_path = os.path.join(res_dir, f"{solver}.csv")
-      testEvaluator = Z3StrategyEvaluator(test_dir, timeout, batchSize, is_write_res=True, res_path=csv_path)
+      testEvaluator = Z3StrategyEvaluator(test_lst, timeout, batchSize, is_write_res=True, res_path=csv_path)
       testSize = testEvaluator.getBenchmarkSize()
       resTuple = testEvaluator.evaluate(strat)  
       par2 = Z3StrategyEvaluator.caculateTimePar2(resTuple, testSize, timeout)

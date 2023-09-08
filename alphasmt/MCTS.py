@@ -141,7 +141,7 @@ class MCTSNode():
 
 
 class MCTS_RUN():
-    def __init__(self, num_simulations, is_mean, training_set, logic, timeout, batch_size, log_folder, c_uct, c_ucb, test_factor, probe_dict, tmp_folder, root = None):
+    def __init__(self, num_simulations, is_mean, training_lst, logic, timeout, batch_size, log_folder, c_uct, c_ucb, test_factor, probe_dict, tmp_folder, root = None):
         # to-do: pack some into config
         self.numSimulations = num_simulations
         self.isMean = is_mean
@@ -149,7 +149,7 @@ class MCTS_RUN():
         self.c_uct = c_uct
         self.c_ucb = c_ucb
         # self.alpha = alpha
-        self.trainingSet = training_set
+        self.trainingLst = training_lst
         self.logic = logic
         self.timeout = timeout
         self.batchSize = batch_size
@@ -225,7 +225,7 @@ class MCTS_RUN():
 
     def _oneSimulation(self):
         # now does not consider the root is not the game start
-        self.env = StrategyGame(self.trainingSet, self.logic, self.timeout, self.probeDict, self.batchSize, test_factor=self.testFactor, tmp_dir=self.tmpFolder)
+        self.env = StrategyGame(self.trainingLst, self.logic, self.timeout, self.probeDict, self.batchSize, test_factor=self.testFactor, tmp_dir=self.tmpFolder)
         selectNode, searchPath = self._select()
         self.sim_log.info("Selected Node: " + str(selectNode))
         self.sim_log.info("Selected Strategy ParseTree: " + str(self.env))

@@ -51,6 +51,14 @@ def createProbeStatDict(benchmark_directory):
     probeStats[52] = {"value": [calculatePercentile(sizeLst, p) for p in percentileLst]} # action 52: probe size
     return probeStats
 
+def createSortedBenchmarkList(benchmark_directory, timeout, batchSize, test_factor):
+    evaluator = Z3StrategyEvaluator([str(p) for p in list(pathlib.Path(benchmark_directory).rglob(f"*.smt2"))], timeout, batchSize, test_factor=test_factor)
+    resDict = evaluator.getResDict(None)
+    # sort resDict into a list by time; if time is None, it is the largest
+    sortedResLst = sorted(resDict.items(), key=lambda x: x[1][2] if x[1][2] is not None else timeout, reverse=True)
+    sortedBenchmarkLst = [res[1][3] for res in sortedResLst]
+    return sortedBenchmarkLst
+
 def main():
     startTime = time.time()
     parser = argparse.ArgumentParser()
@@ -82,22 +90,25 @@ def main():
     log.info(f"Probe Stats: {trainProbeStatDict}")
 
     # train
+    trainLst = createSortedBenchmarkList(train_path, timeout, batchSize, test_factor)
+
+
     log.info("MCTS Simulations Start")
-    run = MCTS_RUN(sim_num, is_mean_est, train_path, logic, timeout, batchSize, log_folder, c_uct=c_uct, c_ucb=c_ucb, test_factor=test_factor, probe_dict=trainProbeStatDict, tmp_folder=tmp_folder)
+    run = MCTS_RUN(sim_num, is_mean_est, trainLst, logic, timeout, batchSize, log_folder, c_uct=c_uct, c_ucb=c_ucb, test_factor=test_factor, probe_dict=trainProbeStatDict, tmp_folder=tmp_folder)
     run.start()
     strat_candidates = run.bestNStrategies(num_val_strat)
     log.info(f"Simulations done. {num_val_strat} strategies are selected.")
 
-    validStartTime = time.time()
     # validate
+    validStartTime = time.time()
     val_log = logging.getLogger("validation")
     val_log.setLevel(logging.INFO)
     vallog_handler = logging.FileHandler(f"{log_folder}/validation.log")
     val_log.addHandler(vallog_handler) 
-
+    valLst = createSortedBenchmarkList(val_path, timeout, batchSize, test_factor)
 
     log.info("Validation Starts\n")
-    valEvaluator = Z3StrategyEvaluator(val_path, timeout, batchSize, test_factor=test_factor)
+    valEvaluator = Z3StrategyEvaluator(valLst, timeout, batchSize, test_factor=test_factor)
     valSize = valEvaluator.getBenchmarkSize()
     bestPar2 = valSize * timeout * 2
     bestStrat = None

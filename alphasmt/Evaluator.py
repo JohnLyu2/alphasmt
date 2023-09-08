@@ -76,10 +76,11 @@ class Z3Runner(threading.Thread):
         return self.id, res, rlimit, self.time_after - self.time_before, self.smt_file
 
 class Z3StrategyEvaluator():
-    def __init__(self, benchmark_dir, timeout, batch_size, test_factor=1, tmp_dir="/tmp/", is_write_res=False, res_path=None):
-        self.benchmarkDir = benchmark_dir
-        self.benchmarkLst = [str(p) for p in sorted(
-            list(pathlib.Path(self.benchmarkDir).rglob(f"*.smt2")))]
+    def __init__(self, benchmark_lst, timeout, batch_size, test_factor=1, tmp_dir="/tmp/", is_write_res=False, res_path=None):
+        # self.benchmarkDir = benchmark_dir
+        # self.benchmarkLst = [str(p) for p in sorted(
+        #     list(pathlib.Path(self.benchmarkDir).rglob(f"*.smt2")))]
+        self.benchmarkLst = benchmark_lst
         assert (self.getBenchmarkSize() > 0)
         self.timeout = int(timeout/test_factor)
         assert (self.timeout > 0)
@@ -91,12 +92,8 @@ class Z3StrategyEvaluator():
     def getBenchmarkSize(self):
         return len(self.benchmarkLst)
 
-    # returns a tuple (#solved, total rlimit, total time)
-    def evaluate(self, strat_str):
+    def getResDict(self, strat_str):
         results = {}
-        numSolved = 0
-        rlimitSolved = 0
-        timeSolved = 0
         size = self.getBenchmarkSize()
         for i in range(0, size, self.batchSize):
             batch_instance_ids = range(i, min(i+self.batchSize, size))
@@ -113,6 +110,14 @@ class Z3StrategyEvaluator():
                 id, resTask, rlimitTask, timeTask, pathTask = task.collect()
                 results[id] = (resTask, rlimitTask, timeTask, pathTask)
         assert len(results) == size
+        return results
+
+    # returns a tuple (#solved, total rlimit, total time)
+    def evaluate(self, strat_str):
+        results = self.getResDict(strat_str)
+        numSolved = 0
+        rlimitSolved = 0
+        timeSolved = 0
         for id in results:
             # to-do: also check for result correctness
             if results[id][0] == "sat" or results[id][0] == "unsat":
