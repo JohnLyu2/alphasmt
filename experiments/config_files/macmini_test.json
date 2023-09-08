@@ -9,7 +9,6 @@
   "batch_size": 2,
   "c_uct": 0.5,
   "c_ucb": 0.2,
-  "mab_alpha": 0.3,
   "testing_factor": 24,
   "temp_folder": "/tmp/",
   "random_seed": 0
