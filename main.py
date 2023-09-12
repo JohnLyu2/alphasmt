@@ -51,8 +51,8 @@ def createProbeStatDict(benchmark_directory):
     probeStats[52] = {"value": [calculatePercentile(sizeLst, p) for p in percentileLst]} # action 52: probe size
     return probeStats
 
-def createSortedBenchmarkList(benchmark_directory, timeout, batchSize, test_factor):
-    evaluator = Z3StrategyEvaluator([str(p) for p in list(pathlib.Path(benchmark_directory).rglob(f"*.smt2"))], timeout, batchSize, test_factor=test_factor)
+def createSortedBenchmarkList(benchmark_directory, timeout, batchSize, test_factor, tmp_folder):
+    evaluator = Z3StrategyEvaluator([str(p) for p in list(pathlib.Path(benchmark_directory).rglob(f"*.smt2"))], timeout, batchSize, test_factor=test_factor, tmp_dir=tmp_folder)
     resDict = evaluator.getResDict(None)
     # sort resDict into a list by time; if time is None, it is the largest
     sortedResLst = sorted(resDict.items(), key=lambda x: x[1][2] if x[1][2] is not None else timeout, reverse=True)
@@ -90,7 +90,7 @@ def main():
     log.info(f"Probe Stats: {trainProbeStatDict}")
 
     # train
-    trainLst = createSortedBenchmarkList(train_path, timeout, batchSize, test_factor)
+    trainLst = createSortedBenchmarkList(train_path, timeout, batchSize, test_factor, tmp_folder)
 
 
     log.info("MCTS Simulations Start")
@@ -105,7 +105,7 @@ def main():
     val_log.setLevel(logging.INFO)
     vallog_handler = logging.FileHandler(f"{log_folder}/validation.log")
     val_log.addHandler(vallog_handler) 
-    valLst = createSortedBenchmarkList(val_path, timeout, batchSize, test_factor)
+    valLst = createSortedBenchmarkList(val_path, timeout, batchSize, test_factor, tmp_folder)
 
     log.info("Validation Starts\n")
     valEvaluator = Z3StrategyEvaluator(valLst, timeout, batchSize, test_factor=test_factor)
