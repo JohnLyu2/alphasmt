@@ -128,6 +128,7 @@ def main():
     finalStratPath = f"{log_folder}/final_strategy.txt"
     with open(finalStratPath, 'w') as f:
        f.write(bestStrat)
+    log.info(f"Final Strategy saved to: {finalStratPath}")
 
 if __name__ == "__main__":
     main()
