@@ -8,8 +8,8 @@ import random
 import time
 from z3 import *
 
-from alphasmt.MCTS import MCTS_RUN
-from alphasmt.Evaluator import Z3StrategyEvaluator
+from alphasmt.mcts import MCTS_RUN
+from alphasmt.evaluator import Z3StrategyEvaluator
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.INFO)

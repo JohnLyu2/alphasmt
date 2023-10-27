@@ -9,11 +9,16 @@ The only prerequisites are Z3 and its Python binding (Z3Py). See the instruciton
 
 See ``aaai24/`` for our final strategies and testing results. 
 
+## Data Download
+
+
+
 ## Z3alpha Strategy Synthesis
 
 
 ## FastSMT Strategy Synthesis
 
-We made minor modifications to the FastSMT source code for compatibility with Z3 12.2.2.  
+We made minor modifications to the FastSMT source code for compatibility with Z3 12.2.2. Visit https://github.com/kjiang249/fastsmt for the modified FastSMT and instruction on FastSMT strategy synthesis reproduction.
 
 ## Evaluation
+

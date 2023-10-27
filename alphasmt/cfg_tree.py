@@ -1,7 +1,188 @@
-from alphasmt.TacticNode import *
 
 MAX_TIMEOUT_STRAT = 3
 MAX_BRANCH_DEPTH = 2
+
+class DerivationNode():
+    def __init__(self, children, expand_type, parent): # may not need parent
+        if children is None:
+            self.children = []
+        else:
+            self.children = children
+        self.expandType = expand_type
+        self.parent = parent
+        
+    # isTerminal and isLeaf is different as a tree may not be complete
+    def isLeaf(self):
+        if len(self.children):
+            return False
+        return True
+
+
+    def applyRule(self, action, params):
+        assert (self.isLeaf())
+        assert (action in self.legalActions())
+        func = self.action_dict[action]
+        func(params)
+        self.expandType = action
+
+class ProbeTerminal(DerivationNode):
+    def __init__(self, name, value, parent):
+        super().__init__(None, None, parent)
+        self.name = name
+        self.value = value
+
+    def __str__(self):
+        return f"{self.name} {self.value}"
+
+    def isTerminal(self):
+        return True
+
+class ProbeSelectorNonterm(DerivationNode):
+    def __init__(self, parent, children = None, expand_type = None):
+        super().__init__(children, expand_type, parent)
+        self.action_dict = {
+            50: "num-consts", 
+            51: "num-exprs",
+            52: "size"
+        }
+
+    def __str__(self):
+        if self.isLeaf():
+            return f"<Probe + Value>"
+        return str(self.children[0])
+    
+    def isTerminal(self):
+        return False
+    
+    def legalActions(self, rollout = False):
+        return list(self.action_dict.keys())
+    
+    # to be checked
+    def applyRule(self, action, params):
+        assert (self.isLeaf())
+        assert (action in self.legalActions())
+        probe_name = self.action_dict[action]
+        value = params['value']
+        selected = ProbeTerminal(probe_name, value, self)
+        self.children.append(selected)
+        self.expandType = action
+
+class TacticTerminal(DerivationNode):
+    def __init__(self, name, params, parent): # tactic terminals do not have children 
+        super().__init__(None, None, parent)
+        self.name = name
+        self.params = params
+        # self._setParamMABs()
+
+    def __str__(self):
+        if not self.params:
+          return self.name 
+        tacticWithParamsStr = "(using-params " + self.name
+        for param in self.params:
+            paramStr = " :" + param + " " + str(self.params[param])
+            tacticWithParamsStr += paramStr
+        tacticWithParamsStr += ")"
+        return tacticWithParamsStr
+
+    def hasParams(self):
+        return not self.params
+
+    def isTerminal(self):
+        return True
+
+    # def clone(self):
+    #     return TacticTerminal(self.name, self.params) # name and params are not modified; no deep copy here
+
+class PreprocessNonterm(DerivationNode):
+    def __init__(self, logic, parent, children = None, expand_type = None):
+        super().__init__(children, expand_type, parent)
+        self.logic = logic
+        self.action_dict = {
+            20: "simplify", 
+            21: "propagate-values",
+            22: "ctx-simplify",
+            23: "elim-uncnstr",
+            24: "solve-eqs",
+            # 25 - 31 are QF_BV only
+            25: "purify-arith",
+            26: "max-bv-sharing",
+            27: "aig",
+            28: "reduce-bv-size",
+            29: "ackermannize_bv",
+            # 30: "bit-blast", # require simplifcation beforehand; otherwise report error
+            # 32 - 34 are QF_NIA only
+            32: "lia2card",
+            33: "card2bv",
+            34: "cofactor-term-ite"
+        }
+
+    def __str__(self):
+        if self.isLeaf():
+            return f"<PreprocessTactic>({self.logic})"
+        return str(self.children[0])
+
+    def isTerminal(self):
+        return False
+
+    def legalActions(self, rollout = False):
+        actions = [i for i in range(20,25)]
+        if self.logic == "QF_BV":
+            return actions + [i for i in range(25,30)]
+        elif self.logic == "QF_NIA":
+            return actions + [i for i in range(32,35)]
+        elif self.logic == "QF_NRA" or self.logic == "SAT":
+            return actions
+        else: 
+            raise Exception("unexpected smt logic")
+
+    def applyRule(self, action, params):
+        assert (self.isLeaf())
+        assert (action in self.legalActions())
+        tactic_name = self.action_dict[action]
+        # params = TACTIC_PARAMS[tactic_name] if tactic_name in TACTIC_PARAMS else None
+        selected = TacticTerminal(tactic_name, params, self)
+        self.children.append(selected)
+        self.expandType = action
+
+
+class SolvingNonterm(DerivationNode):
+    def __init__(self, logic, parent, children = None, expand_type = None):
+        super().__init__(children, expand_type, parent)
+        self.logic = logic
+        self.action_dict = {
+            10: "smt",
+            11: "qfnra-nlsat", # not for BV
+            12: "sat"
+        }
+
+    def __str__(self):
+        if self.isLeaf():
+            return f"<SolvingTactic>({self.logic})"
+        return str(self.children[0])
+
+    def isTerminal(self):
+        return False
+
+    def legalActions(self, rollout = False):
+        actions = [10]
+        if self.logic == "QF_BV":
+            return actions
+        elif self.logic == "QF_NIA" or self.logic == "QF_NRA":
+            return actions + [11]
+        elif self.logic == "SAT":
+            return actions + [12]
+        else: 
+            raise Exception("unexpected smt logic")
+
+    def applyRule(self, action, params):
+        assert (self.isLeaf())
+        assert (action in self.legalActions())
+        tactic_name = self.action_dict[action]
+        # params = TACTIC_PARAMS[tactic_name] if tactic_name in TACTIC_PARAMS else None
+        selected = TacticTerminal(tactic_name, params, self)
+        self.children.append(selected)
+        self.expandType = action
+
 
 class StrategyNonterm(DerivationNode):
     def __init__(self, logic, timeout, timeout_status, branch_status, parent, children = None, expand_type = None, bv1blast = True):

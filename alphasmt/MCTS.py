@@ -1,7 +1,7 @@
 import logging
 import math
 import copy
-from alphasmt.Environment import StrategyGame
+from alphasmt.environment import StrategyGame
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.INFO)

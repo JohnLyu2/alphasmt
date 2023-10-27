@@ -1,7 +1,7 @@
 import random
 import copy
-from alphasmt.AST import DerivationAST
-from alphasmt.Evaluator import Z3StrategyEvaluator
+from alphasmt.cfg_tree import DerivationAST
+from alphasmt.evaluator import Z3StrategyEvaluator
 
 
 class StrategyGame():

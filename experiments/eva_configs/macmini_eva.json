@@ -1,0 +1,11 @@
+{
+  "strat_files": {
+    "z3-alpha": "/Users/zhengyanglumacmini/Desktop/AlphaSMT/experiments/results/out-2023-08-24_20-51-07/final_strategy.txt",
+    "fastsmt": "/Users/zhengyanglumacmini/Desktop/AlphaSMT/experiments/results/out-2023-08-24_20-51-07/final_strategy.txt",
+    "z3": null 
+  },
+  "timeout": 1,
+  "batch_size": 2,
+  "res_dir": "/Users/zhengyanglumacmini/Desktop/AlphaSMT/scripts/temp_res",
+  "test_dir": "/Users/zhengyanglumacmini/Desktop/AlphaSMT/benchmarks/small_test"
+}
