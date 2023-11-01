@@ -5,20 +5,5 @@ Our tool is built on top of Z3 SMT solver (https://github.com/Z3Prover/z3). Curr
 
 The only prerequisites are Z3 and its Python binding (Z3Py). See the instrucitons at https://github.com/Z3Prover/z3 for Z3 installation.
 
-# AAAI-24 Student Program Submission Results and Reproduction
 
-See ``aaai24/`` for our final strategies and testing results. 
-
-## Data Download
-
-
-
-## Z3alpha Strategy Synthesis
-
-
-## FastSMT Strategy Synthesis
-
-We made minor modifications to the FastSMT source code for compatibility with Z3 12.2.2. Visit https://github.com/kjiang249/fastsmt for the modified FastSMT and instruction on FastSMT strategy synthesis reproduction.
-
-## Evaluation
 

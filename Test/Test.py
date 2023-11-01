@@ -1,10 +1,10 @@
 import sys
 sys.path.append('..')
 
-from alphasmt.AST import DerivationAST
-from alphasmt.MCTS import MCTSNode, MCTS_RUN
-from alphasmt.Environment import StrategyGame
-from alphasmt.Evaluator import Z3StrategyEvaluator
+from alphasmt.cfg_tree import DerivationAST
+from alphasmt.mcts import MCTSNode, MCTS_RUN
+from alphasmt.environment import StrategyGame
+from alphasmt.evaluator import Z3StrategyEvaluator
 
 
 def main():
