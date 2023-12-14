@@ -107,7 +107,7 @@ def main():
     log.info(f"Selected {len(selected_strat)} strategies: {selected_strat}, saved to {lnStratCandidatsPath}")
 
     s2startTime = time.time()
-    log.info(f"Stage 1 Time: {s2startTime - s1startTime}")
+    log.info(f"Stage 1 Time: {s2startTime - s1startTime:.0f}")
 
     # Stage 2
     act_lst, solver_dict, preprocess_dict, s1strat2acts = convert_strats_to_act_lists(selected_strat)
@@ -133,17 +133,22 @@ def main():
     s2config['preprocess_dict'] = preprocess_dict
     s2config['res_cache'] = s2_res_dict_acts
 
+    s2caching_end_time = time.time()
+    log.info(f"Stage 2 Caching Time: {s2caching_end_time - s2startTime:.0f}")
+    log.info("S2 MCTS Simulations Start")
+
     run2 = MCTS_RUN(2, s2config, s2BenchLst, logic, value_type, log_folder, tmp_folder=tmp_folder)
     run2.start()
     best_s2 = run2.getBestStrat()
-    finalStratPath = f"{log_folder}/final_strategy.txt"
+    finalStratPath = os.path.join(log_folder, 'final_strategy.txt')
     with open(finalStratPath, 'w') as f:
        f.write(best_s2)
     log.info(f"Final Strategy saved to: {finalStratPath}")
 
     s2endTime = time.time()
-    log.info(f"Stage 2 Time: {s2endTime - s2startTime}")
-    log.info(f"Total Time: {s2endTime - s1startTime}")
+    log.info(f"Stage 2 MCTS Time: {s2endTime - s2caching_end_time:.0f}")
+
+    log.info(f"Total Time: {s2endTime - s1startTime:0f}, with stage1 {s2startTime - s1startTime:.0f}, stage2 caching {s2caching_end_time - s2startTime:.0f}, stage2 MCTS {s2endTime - s2caching_end_time:.0f}")
 
 
 if __name__ == "__main__":
