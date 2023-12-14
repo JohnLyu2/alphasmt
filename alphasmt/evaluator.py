@@ -119,21 +119,9 @@ class Z3StrategyEvaluator():
         return results
 
     # returns a tuple (#solved, par2, par10)
-    def evaluate(self, strat_str):
+    def testing(self, strat_str):
         results = self.getResLst(strat_str)
-        
-        
-    
-    # @staticmethod
-    # def caculateTimePar2(res_tuple, total_instnace, timeout):
-    #     numSolved, rlimitSum, timeSum = res_tuple
-    #     numUnsolved = total_instnace - numSolved
-    #     return timeSum + numUnsolved * timeout * 2
-
-    # # add argument to select type of reward; now scaled time par2
-    # def getReward(self, strat_str):
-    #     res_tuple = self.evaluate(strat_str)
-    #     size = self.getBenchmarkSize()
-    #     par2 = Z3StrategyEvaluator.caculateTimePar2(res_tuple, size, self.timeout)
-    #     maxPar2 = 2 * self.timeout * size
-    #     return float(maxPar2-par2)/maxPar2
+        solved = solvedNum(results)
+        par2 = parN(results, 2, self.timeout)
+        par10 = parN(results, 10, self.timeout)
+        return (solved, par2, par10)
