@@ -7,6 +7,8 @@ import time
 import logging
 import csv
 
+from alphasmt.utils import solvedNum, parN
+
 log = logging.getLogger(__name__)
 log.setLevel(logging.INFO)
 log_handler = logging.StreamHandler()
@@ -116,25 +118,11 @@ class Z3StrategyEvaluator():
             assert(results[i] != None)
         return results
 
-    # returns a tuple (#solved, total rlimit, total time)
-    # def evaluate(self, strat_str):
-    #     results = self.getResLst(strat_str) # just changed result from a dict to a list; change the responding code
-    #     numSolved = 0
-    #     rlimitSolved = 0
-    #     timeSolved = 0
-    #     for id in results:
-    #         # to-do: also check for result correctness
-    #         if results[id][0] == "sat" or results[id][0] == "unsat":
-    #             numSolved += 1
-    #             rlimitSolved += results[id][1]
-    #             timeSolved += results[id][2]
-    #     if self.isWriteRes:
-    #         with open(self.resPath, 'w') as csvfile:
-    #             csvwriter = csv.writer(csvfile)
-    #             csvwriter.writerow(["id", "path", "result", "rlimit", "time"]) # write header
-    #             for id in results:
-    #                 csvwriter.writerow([id, results[id][3], results[id][0], results[id][1], results[id][2]])
-    #     return (numSolved, rlimitSolved, timeSolved)
+    # returns a tuple (#solved, par2, par10)
+    def evaluate(self, strat_str):
+        results = self.getResLst(strat_str)
+        
+        
     
     # @staticmethod
     # def caculateTimePar2(res_tuple, total_instnace, timeout):

@@ -1,6 +1,7 @@
 *.pyc
 .DS_Store
 .vscode
+*.sh
 
 # Project specific
 experiments/results/
