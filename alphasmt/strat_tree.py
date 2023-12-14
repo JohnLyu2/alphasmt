@@ -341,7 +341,7 @@ class S1Strategy(ASTNode):
         bit_blast_node = TacticNode("bit-blast", params, 7)
         self.parent.replaceChild(simplify_node, self.pos)
         simplify_node.addChildren([bit_blast_node])
-        bit_blast_node.addChildren([S1Strategy("SAT", None)])
+        bit_blast_node.addChildren([S1Strategy("SAT")])
 
 class S2Strategy(ASTNode):
     def __init__(self, timeout, s1_lst, solver_dict, preprocess_dict):
