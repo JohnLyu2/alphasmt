@@ -1,15 +1,22 @@
 {
   "logic": "QF_NIA",
-  "training_dir": "benchmarks/small_test",
-  "validation_dir": "benchmarks/small_test",
-  "simulation_number": 50,
-  "is_mean_est": true,
-  "strategy_2b_validated": 3,
-  "timeout": 24,
   "batch_size": 2,
-  "c_uct": 0.5,
-  "c_ucb": 0.2,
-  "testing_factor": 24,
+  "s1config": {
+    "bench_dir": "benchmarks/small_test",
+    "sim_num": 15,
+    "timeout": 1,
+    "is_mean_est": false,
+    "c_uct": 0.5,
+    "c_ucb": 0.2
+  },
+  "s2config": {
+    "bench_dir": "benchmarks/small_test",
+    "sim_num": 50,
+    "timeout": 5,
+    "is_mean_est": false,
+    "c_uct": 0.5
+  },
+  "ln_strat_num": 5,
   "temp_folder": "/tmp/",
   "random_seed": 0
 }

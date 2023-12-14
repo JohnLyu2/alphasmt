@@ -8,9 +8,9 @@
 
 <Strategy>(QF_BV) := (then simplify bit-blast <Strategy>(SAT)) [7]
 
-<SolvingTactic>(QF_NIA/QF_NRA/QF_BV) := smt  [10]
-<SolvingTactic>(QF_NIA/QF_NRA) := qfnra-nlsat  [11]
-<SolvingTactic>(SAT) := sat  [12]
+<SolverTactic>(QF_NIA/QF_NRA/QF_BV) := smt  [10]
+<SolverTactic>(QF_NIA/QF_NRA) := qfnra-nlsat  [11]
+<SolverTactic>(SAT) := sat  [12]
 
 <PreprocessTactic>(QF_NIA/QF_NRA/QF_BV) := simplify [20]
 <PreprocessTactic>(QF_NIA/QF_NRA/QF_BV) := propagate-values [21]

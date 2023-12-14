@@ -51,7 +51,7 @@ class Z3Runner(threading.Thread):
                 self.join()
             except OSError:
                 pass
-            return self.id, None, None, None, self.smt_file
+            return self.id, None, None, self.timeout, self.smt_file
 
         out, err = self.p.communicate()
 
@@ -76,13 +76,13 @@ class Z3Runner(threading.Thread):
         return self.id, res, rlimit, self.time_after - self.time_before, self.smt_file
 
 class Z3StrategyEvaluator():
-    def __init__(self, benchmark_lst, timeout, batch_size, test_factor=1, tmp_dir="/tmp/", is_write_res=False, res_path=None):
+    def __init__(self, benchmark_lst, timeout, batch_size, tmp_dir="/tmp/", is_write_res=False, res_path=None):
         # self.benchmarkDir = benchmark_dir
         # self.benchmarkLst = [str(p) for p in sorted(
         #     list(pathlib.Path(self.benchmarkDir).rglob(f"*.smt2")))]
         self.benchmarkLst = benchmark_lst
         assert (self.getBenchmarkSize() > 0)
-        self.timeout = int(timeout/test_factor)
+        self.timeout = timeout
         assert (self.timeout > 0)
         self.batchSize = batch_size
         self.tmpDir = tmp_dir
@@ -92,9 +92,10 @@ class Z3StrategyEvaluator():
     def getBenchmarkSize(self):
         return len(self.benchmarkLst)
 
-    def getResDict(self, strat_str):
-        results = {}
+    # now returns a list of solving time for each instance; if not solved, return None
+    def getResLst(self, strat_str):
         size = self.getBenchmarkSize()
+        results = [None] * size
         for i in range(0, size, self.batchSize):
             batch_instance_ids = range(i, min(i+self.batchSize, size))
             threads = []
@@ -108,40 +109,43 @@ class Z3StrategyEvaluator():
                 time_left = max(0, self.timeout - (time.time() - time_start))
                 task.join(time_left)
                 id, resTask, rlimitTask, timeTask, pathTask = task.collect()
-                results[id] = (resTask, rlimitTask, timeTask, pathTask)
-        assert len(results) == size
+                solved = True if (resTask == 'sat' or resTask == 'unsat') else False
+                results[id] = (solved, timeTask)
+        # assert no entries in results is still -1
+        for i in range(size):
+            assert(results[i] != None)
         return results
 
     # returns a tuple (#solved, total rlimit, total time)
-    def evaluate(self, strat_str):
-        results = self.getResDict(strat_str)
-        numSolved = 0
-        rlimitSolved = 0
-        timeSolved = 0
-        for id in results:
-            # to-do: also check for result correctness
-            if results[id][0] == "sat" or results[id][0] == "unsat":
-                numSolved += 1
-                rlimitSolved += results[id][1]
-                timeSolved += results[id][2]
-        if self.isWriteRes:
-            with open(self.resPath, 'w') as csvfile:
-                csvwriter = csv.writer(csvfile)
-                csvwriter.writerow(["id", "path", "result", "rlimit", "time"]) # write header
-                for id in results:
-                    csvwriter.writerow([id, results[id][3], results[id][0], results[id][1], results[id][2]])
-        return (numSolved, rlimitSolved, timeSolved)
+    # def evaluate(self, strat_str):
+    #     results = self.getResLst(strat_str) # just changed result from a dict to a list; change the responding code
+    #     numSolved = 0
+    #     rlimitSolved = 0
+    #     timeSolved = 0
+    #     for id in results:
+    #         # to-do: also check for result correctness
+    #         if results[id][0] == "sat" or results[id][0] == "unsat":
+    #             numSolved += 1
+    #             rlimitSolved += results[id][1]
+    #             timeSolved += results[id][2]
+    #     if self.isWriteRes:
+    #         with open(self.resPath, 'w') as csvfile:
+    #             csvwriter = csv.writer(csvfile)
+    #             csvwriter.writerow(["id", "path", "result", "rlimit", "time"]) # write header
+    #             for id in results:
+    #                 csvwriter.writerow([id, results[id][3], results[id][0], results[id][1], results[id][2]])
+    #     return (numSolved, rlimitSolved, timeSolved)
     
-    @staticmethod
-    def caculateTimePar2(res_tuple, total_instnace, timeout):
-        numSolved, rlimitSum, timeSum = res_tuple
-        numUnsolved = total_instnace - numSolved
-        return timeSum + numUnsolved * timeout * 2
+    # @staticmethod
+    # def caculateTimePar2(res_tuple, total_instnace, timeout):
+    #     numSolved, rlimitSum, timeSum = res_tuple
+    #     numUnsolved = total_instnace - numSolved
+    #     return timeSum + numUnsolved * timeout * 2
 
-    # add argument to select type of reward; now scaled time par2
-    def getReward(self, strat_str):
-        res_tuple = self.evaluate(strat_str)
-        size = self.getBenchmarkSize()
-        par2 = Z3StrategyEvaluator.caculateTimePar2(res_tuple, size, self.timeout)
-        maxPar2 = 2 * self.timeout * size
-        return float(maxPar2-par2)/maxPar2
+    # # add argument to select type of reward; now scaled time par2
+    # def getReward(self, strat_str):
+    #     res_tuple = self.evaluate(strat_str)
+    #     size = self.getBenchmarkSize()
+    #     par2 = Z3StrategyEvaluator.caculateTimePar2(res_tuple, size, self.timeout)
+    #     maxPar2 = 2 * self.timeout * size
+    #     return float(maxPar2-par2)/maxPar2

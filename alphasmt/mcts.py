@@ -14,9 +14,9 @@ INIT_Q = 0
 # to-do: move to somewhere else later/change it into inputs
 PARAMS = {
     # timeout
-    2: {
-        "timeout": [2, 4, 8, 16]
-    },
+    # 2: {
+    #     "timeout": [2, 4, 8, 16]
+    # },
     # "simplify"
     20: { 
         "elim_and": ["true","false"],
@@ -46,7 +46,7 @@ PARAMS = {
 }
 
 class MCTSNode():
-    def __init__(self, is_mean, logger, c_ucb, probe_dict, action_history=[]):
+    def __init__(self, is_mean, logger, c_ucb, action_history=[]):
         self.isMean = is_mean
         self.c_ucb = c_ucb
         # self.alpha = alpha
@@ -55,7 +55,6 @@ class MCTSNode():
         self.valueEst = 0
         self.children = {}
         self.reward = 0  # always 0 for now
-        self.probeDict = probe_dict
         self._setParamMABs()
         self.logger = logger
 
@@ -68,15 +67,12 @@ class MCTSNode():
     def hasParamMABs(self):
         if len(self.actionHistory) == 0: return False
         lastestAction = self.actionHistory[-1]
-        return (lastestAction in PARAMS.keys() or lastestAction in self.probeDict.keys())
+        return lastestAction in PARAMS.keys()
 
     def _setParamMABs(self):
         if not self.hasParamMABs(): return
         lastestAction = self.actionHistory[-1]
-        if lastestAction in PARAMS.keys():
-            self.params = PARAMS[lastestAction]
-        else:
-            self.params = self.probeDict[lastestAction]
+        self.params = PARAMS[lastestAction]
         self.MABs = {}
         self.selected = {}
         for param in self.params.keys():
@@ -97,13 +93,13 @@ class MCTSNode():
         return ucb
 
     # rename parameter values; easily confuesed with the value of a node
-    def _selectMAB(self, param, remain_time):
+    def _selectMAB(self, param):
         MABdict = self.MABs[param]
         selected = None
         bestUCB = -1
         for valueCandidate, pair in MABdict.items():
-            if param == "timeout" and valueCandidate >= remain_time:
-                continue
+            # if param == "timeout" and valueCandidate >= remain_time:
+            #     continue
             ucb = self._ucb(pair, valueCandidate)
             if ucb > bestUCB:
                 bestUCB = ucb
@@ -111,10 +107,10 @@ class MCTSNode():
         assert(bestUCB >= 0)
         return selected
 
-    def selectMABs(self, remain_time):
+    def selectMABs(self):
         for param in self.params.keys():
             self.logger.debug(f"\n  Select MAB of {param}")
-            selectV = self._selectMAB(param, remain_time)
+            selectV = self._selectMAB(param)
             self.logger.debug(f"  Selected value: {selectV}\n")
             self.selected[param] = selectV
         return self.selected
@@ -141,29 +137,34 @@ class MCTSNode():
 
 
 class MCTS_RUN():
-    def __init__(self, num_simulations, is_mean, training_lst, logic, timeout, batch_size, log_folder, c_uct, c_ucb, test_factor, probe_dict, tmp_folder, root = None):
-        # to-do: pack some into config
-        self.numSimulations = num_simulations
-        self.isMean = is_mean
+    def __init__(self, stage, config, bench_lst, logic, value_type, log_folder, tmp_folder, batch_size = 1, root = None):
+        self.stage = stage
+        self.config = config
+        self.numSimulations = config['sim_num']
+        self.isMean = config['is_mean_est']
         self.discount = 1  # now set to 1
-        self.c_uct = c_uct
-        self.c_ucb = c_ucb
+        self.c_uct = config['c_uct']
         # self.alpha = alpha
-        self.trainingLst = training_lst
+        self.trainingLst = bench_lst
         self.logic = logic
-        self.timeout = timeout
+        self.timeout = config['timeout']
+        self.valueType = value_type
         self.batchSize = batch_size
-        self.resDatabase = {}
+        if self.stage == 1:
+            self.c_ucb = config['c_ucb']
+            self.resDatabase = {}
+        else:
+            self.c_ucb = None
+            self.resDatabase = config['res_cache']
         self.sim_log = logging.getLogger("simulation")
         self.sim_log.setLevel(logging.DEBUG)
-        simlog_handler = logging.FileHandler(f"{log_folder}/mcts_simulations.log")
+        simlog_handler = logging.FileHandler(f"{log_folder}/s{self.stage}mcts.log")
         self.sim_log.addHandler(simlog_handler)
-        self.testFactor = test_factor
-        self.probeDict = probe_dict
         self.tmpFolder = tmp_folder
-        if not root: root = MCTSNode(self.isMean, self.sim_log, c_ucb, self.probeDict)
+        if not root: root = MCTSNode(self.isMean, self.sim_log, self.c_ucb)
         self.root = root
         self.bestReward = -1
+        self.bestStrat = None
 
     def _uct(self, childNode, parentNode, action):
         valueScore = childNode.reward + self.discount * childNode.valueEst
@@ -195,8 +196,8 @@ class MCTS_RUN():
             assert(bestUCT >= 0)
             node = nextNode
             self.sim_log.debug(f"  Selected action {selected}")
-            remainTime = self.env.getRemainTime() if selected == 2 else None
-            params = node.selectMABs(remainTime) if node.hasParamMABs() else None
+            # remainTime = self.env.getRemainTime() if selected == 2 else None
+            params = node.selectMABs() if node.hasParamMABs() else None
             searchPath.append(node)
             self.env.step(selected, params)
         return node, searchPath
@@ -206,7 +207,7 @@ class MCTS_RUN():
         for action in actions:
             history = copy.deepcopy(node.actionHistory)
             history.append(action)
-            node.children[action] = MCTSNode(self.isMean, self.sim_log, self.c_ucb, self.probeDict, history)
+            node.children[action] = MCTSNode(self.isMean, self.sim_log, self.c_ucb, history)
 
     def _rollout(self):
         self.env.rollout()
@@ -225,22 +226,23 @@ class MCTS_RUN():
 
     def _oneSimulation(self):
         # now does not consider the root is not the game start
-        self.env = StrategyGame(self.trainingLst, self.logic, self.timeout, self.probeDict, self.batchSize, test_factor=self.testFactor, tmp_dir=self.tmpFolder)
+        self.env = StrategyGame(self.stage, self.trainingLst, self.logic, self.timeout, self.config, self.batchSize, tmp_dir=self.tmpFolder)
         selectNode, searchPath = self._select()
         self.sim_log.info("Selected Node: " + str(selectNode))
         self.sim_log.info("Selected Strategy ParseTree: " + str(self.env))
         if self.env.isTerminal():
             self.sim_log.info("Terminal Strategy: no rollout")
-            value = self.env.getValue(self.resDatabase)
+            value = self.env.getValue(self.resDatabase, self.valueType)
         else:
             actions = self.env.legalActions()
             # now reward is always 0 at each step
             self._expandNode(selectNode, actions, 0)
             self._rollout()
-            self.sim_log.info("Rollout Strategy: " + str(self.env))
-            value = self.env.getValue(self.resDatabase)
+            self.sim_log.info(f"Rollout Strategy: {self.env}")
+            value = self.env.getValue(self.resDatabase, self.valueType)
         if value > self.bestReward:
             self.bestReward = value
+            self.bestStrat = str(self.env)
             log.info(f"New best reward found: {value:.5f}")
         self.sim_log.info(f"Final Return: {value}\n")
         self._backup(searchPath, value)
@@ -258,3 +260,9 @@ class MCTS_RUN():
 
     def getStrategyStat(self, strat):
         return self.resDatabase[strat]
+    
+    def getResDict(self):
+        return self.resDatabase
+    
+    def getBestStrat(self):
+        return self.bestStrat
