@@ -66,7 +66,7 @@ def createBenchmarkList(benchmark_directory, timeout, batchSize, tmp_folder, is_
     return benchmarkLst
 
 def main():
-    startTime = time.time()
+    s1startTime = time.time()
     parser = argparse.ArgumentParser()
     parser.add_argument('json_config', type=str, help='The experiment configuration file in json')
     configJsonPath = parser.parse_args()
@@ -104,7 +104,10 @@ def main():
     with open(lnStratCandidatsPath, 'w') as f:
        for strat in selected_strat:
             f.write(strat + '\n')
-    log.info(f"Selected {len(selected_strat)} strategies: {selected_strat}")
+    log.info(f"Selected {len(selected_strat)} strategies: {selected_strat}, saved to {lnStratCandidatsPath}")
+
+    s2startTime = time.time()
+    log.info(f"Stage 1 Time: {s2startTime - s1startTime}")
 
     # Stage 2
     act_lst, solver_dict, preprocess_dict, s1strat2acts = convert_strats_to_act_lists(selected_strat)
@@ -137,6 +140,10 @@ def main():
     with open(finalStratPath, 'w') as f:
        f.write(best_s2)
     log.info(f"Final Strategy saved to: {finalStratPath}")
+
+    s2endTime = time.time()
+    log.info(f"Stage 2 Time: {s2endTime - s2startTime}")
+    log.info(f"Total Time: {s2endTime - s1startTime}")
 
 
 if __name__ == "__main__":
