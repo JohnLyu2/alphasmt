@@ -121,6 +121,13 @@ class Z3StrategyEvaluator():
     # returns a tuple (#solved, par2, par10)
     def testing(self, strat_str):
         results = self.getResLst(strat_str)
+        if self.isWriteRes:
+            with open(self.resPath, 'w') as f:
+                writer = csv.writer(f)
+                # write header
+                writer.writerow(['id', 'path', 'solved', 'time'])
+                for i in range(len(self.benchmarkLst)):
+                    writer.writerow([i, self.benchmarkLst[i], results[i][0], results[i][1]])
         solved = solvedNum(results)
         par2 = parN(results, 2, self.timeout)
         par10 = parN(results, 10, self.timeout)
