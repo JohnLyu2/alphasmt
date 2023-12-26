@@ -111,9 +111,9 @@ def main():
 
     # Stage 2
     act_lst, solver_dict, preprocess_dict, s1strat2acts = convert_strats_to_act_lists(selected_strat)
-    print(f"converted selected strategies: {act_lst}")
-    print(f"solver dict: {solver_dict}")
-    print(f"preprocess dict: {preprocess_dict}")
+    log.info(f"solver dict: {solver_dict}")
+    log.info(f"preprocess dict: {preprocess_dict}")
+    log.info(f"converted selected strategies: {act_lst}")
 
     s2_bench_dir = s2config['bench_dir']
     s2timeout = s2config["timeout"]
@@ -121,7 +121,9 @@ def main():
 
     s2_res_dict = {}
     s2evaluator = Z3StrategyEvaluator(s2BenchLst, s2timeout, batch_size, tmp_dir=tmp_folder)
-    for strat in selected_strat:
+    for i in range(len(selected_strat)):
+        strat = selected_strat[i]
+        log.info(f"Stage 2 Caching: {i+1}/{len(selected_strat)}")
         s2_res_dict[strat] = s2evaluator.getResLst(strat)
 
     s2_res_dict_acts = {}
@@ -148,7 +150,7 @@ def main():
     s2endTime = time.time()
     log.info(f"Stage 2 MCTS Time: {s2endTime - s2caching_end_time:.0f}")
 
-    log.info(f"Total Time: {s2endTime - s1startTime:0f}, with stage1 {s2startTime - s1startTime:.0f}, stage2 caching {s2caching_end_time - s2startTime:.0f}, stage2 MCTS {s2endTime - s2caching_end_time:.0f}")
+    log.info(f"Total Time: {s2endTime - s1startTime:.0f}, with stage1 {s2startTime - s1startTime:.0f}, stage2 caching {s2caching_end_time - s2startTime:.0f}, stage2 MCTS {s2endTime - s2caching_end_time:.0f}")
 
 
 if __name__ == "__main__":

@@ -1,5 +1,4 @@
 import os
-import pathlib
 import threading
 import subprocess
 import shlex

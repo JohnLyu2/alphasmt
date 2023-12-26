@@ -46,7 +46,7 @@ PARAMS = {
 }
 
 class MCTSNode():
-    def __init__(self, is_mean, logger, c_ucb, action_history=[]):
+    def __init__(self, is_mean, logger, c_ucb, is_log, action_history=[]):
         self.isMean = is_mean
         self.c_ucb = c_ucb
         # self.alpha = alpha
@@ -57,6 +57,7 @@ class MCTSNode():
         self.reward = 0  # always 0 for now
         self._setParamMABs()
         self.logger = logger
+        self.is_log = is_log
 
     def __str__(self):
         return str(self.actionHistory)
@@ -89,7 +90,8 @@ class MCTSNode():
             math.sqrt(math.log(self.visitCount + 1) / # check ucb 1
                       (visitCount + 0.001))
         ucb = qScore + exploreScore
-        self.logger.debug(f"  Value of {action}: Q value: {qScore:.05f}; Exp: {exploreScore:.05f} ({visitCount}/{self.visitCount}); UCB: {ucb:.05f}")
+        if self.is_log:
+            self.logger.debug(f"  Value of {action}: Q value: {qScore:.05f}; Exp: {exploreScore:.05f} ({visitCount}/{self.visitCount}); UCB: {ucb:.05f}")
         return ucb
 
     # rename parameter values; easily confuesed with the value of a node
@@ -109,9 +111,11 @@ class MCTSNode():
 
     def selectMABs(self):
         for param in self.params.keys():
-            self.logger.debug(f"\n  Select MAB of {param}")
+            if self.is_log:
+                self.logger.debug(f"\n  Select MAB of {param}")
             selectV = self._selectMAB(param)
-            self.logger.debug(f"  Selected value: {selectV}\n")
+            if self.is_log:
+                self.logger.debug(f"  Selected value: {selectV}\n")
             self.selected[param] = selectV
         return self.selected
 
@@ -148,6 +152,7 @@ class MCTS_RUN():
         self.trainingLst = bench_lst
         self.logic = logic
         self.timeout = config['timeout']
+        self.is_log = config['is_log']
         self.valueType = value_type
         self.batchSize = batch_size
         if self.stage == 1:
@@ -156,12 +161,13 @@ class MCTS_RUN():
         else:
             self.c_ucb = None
             self.resDatabase = config['res_cache']
-        self.sim_log = logging.getLogger("simulation")
+        self.sim_log = logging.getLogger(f"s{self.stage}mcts")
+        self.sim_log.propagate = False
         self.sim_log.setLevel(logging.DEBUG)
         simlog_handler = logging.FileHandler(f"{log_folder}/s{self.stage}mcts.log")
         self.sim_log.addHandler(simlog_handler)
         self.tmpFolder = tmp_folder
-        if not root: root = MCTSNode(self.isMean, self.sim_log, self.c_ucb)
+        if not root: root = MCTSNode(self.isMean, self.sim_log, self.c_ucb, self.is_log)
         self.root = root
         self.bestReward = -1
         self.bestStrat = None
@@ -172,7 +178,8 @@ class MCTS_RUN():
             math.sqrt(math.log(parentNode.visitCount) /
                       (childNode.visitCount + 0.001))
         uct = valueScore + exploreScore
-        self.sim_log.debug(f"  Value of {action}: Q value: {valueScore:.05f}; Exp: {exploreScore:.05f} ({childNode.visitCount}/{parentNode.visitCount}); UCT: {uct:.05f}")
+        if self.is_log:
+            self.sim_log.debug(f"  Value of {action}: Q value: {valueScore:.05f}; Exp: {exploreScore:.05f} ({childNode.visitCount}/{parentNode.visitCount}); UCT: {uct:.05f}")
         return uct
 
     def _select(self):
@@ -180,7 +187,8 @@ class MCTS_RUN():
         node = self.root
         # does not consider the root has MABs
         while node.isExpanded() and not self.env.isTerminal():
-            self.sim_log.debug(f"\n  Select at {node}")
+            if self.is_log:
+                self.sim_log.debug(f"\n  Select at {node}")
             # may add randomness when the UCTs are the same
 
             # select in the order as in the list if the same UCT values; put more promising/safer actions earlier in legalActions()
@@ -195,7 +203,8 @@ class MCTS_RUN():
                     nextNode = childNode
             assert(bestUCT >= 0)
             node = nextNode
-            self.sim_log.debug(f"  Selected action {selected}")
+            if self.is_log:
+                self.sim_log.debug(f"  Selected action {selected}")
             # remainTime = self.env.getRemainTime() if selected == 2 else None
             params = node.selectMABs() if node.hasParamMABs() else None
             searchPath.append(node)
@@ -207,7 +216,7 @@ class MCTS_RUN():
         for action in actions:
             history = copy.deepcopy(node.actionHistory)
             history.append(action)
-            node.children[action] = MCTSNode(self.isMean, self.sim_log, self.c_ucb, history)
+            node.children[action] = MCTSNode(self.isMean, self.sim_log, self.c_ucb, self.is_log, history)
 
     def _rollout(self):
         self.env.rollout()
@@ -228,29 +237,36 @@ class MCTS_RUN():
         # now does not consider the root is not the game start
         self.env = StrategyGame(self.stage, self.trainingLst, self.logic, self.timeout, self.config, self.batchSize, tmp_dir=self.tmpFolder)
         selectNode, searchPath = self._select()
-        self.sim_log.info("Selected Node: " + str(selectNode))
-        self.sim_log.info("Selected Strategy ParseTree: " + str(self.env))
+        if self.is_log:
+            self.sim_log.info("Selected Node: " + str(selectNode))
+            self.sim_log.info("Selected Strategy ParseTree: " + str(self.env))
         if self.env.isTerminal():
-            self.sim_log.info("Terminal Strategy: no rollout")
+            if self.is_log:
+                self.sim_log.info("Terminal Strategy: no rollout")
             value = self.env.getValue(self.resDatabase, self.valueType)
         else:
             actions = self.env.legalActions()
             # now reward is always 0 at each step
             self._expandNode(selectNode, actions, 0)
             self._rollout()
-            self.sim_log.info(f"Rollout Strategy: {self.env}")
+            if self.is_log:
+                self.sim_log.info(f"Rollout Strategy: {self.env}")
             value = self.env.getValue(self.resDatabase, self.valueType)
         if value > self.bestReward:
             self.bestReward = value
             self.bestStrat = str(self.env)
-            log.info(f"New best reward found: {value:.5f}")
-        self.sim_log.info(f"Final Return: {value}\n")
+            log.info(f"At sim {self.num_sim}, new best reward found: {value:.5f}")
+        if self.is_log:
+            self.sim_log.info(f"Final Return: {value}\n")
         self._backup(searchPath, value)
 
     def start(self):
         for i in range(self.numSimulations):
-            log.info(f"Simulation {i} starts")
-            self.sim_log.info(f"Simulation {i} starts")
+            self.num_sim = i
+            if self.stage == 1:
+                log.info(f"Simulation {i} starts")
+            if self.is_log:
+                self.sim_log.info(f"Simulation {i} starts")
             self._oneSimulation()
 
     def bestNStrategies(self, n):

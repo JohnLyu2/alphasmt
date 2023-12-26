@@ -7,14 +7,16 @@
     "timeout": 1,
     "is_mean_est": false,
     "c_uct": 0.5,
-    "c_ucb": 0.2
+    "c_ucb": 0.2,
+    "is_log": true
   },
   "s2config": {
     "bench_dir": "benchmarks/small_test",
     "sim_num": 50,
     "timeout": 5,
     "is_mean_est": false,
-    "c_uct": 0.5
+    "c_uct": 0.5,
+    "is_log": true
   },
   "ln_strat_num": 5,
   "temp_folder": "/tmp/",
