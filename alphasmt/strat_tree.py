@@ -265,8 +265,11 @@ class SolverTactic(ASTNode):
         self.logic = logic
         self.action_dict = {
             10: "smt",
-            11: "qfnra-nlsat", # not for BV
-            12: "sat"
+            11: "qfnra-nlsat", # for QF_NIA and QF_NRA
+            12: "sat",
+            13: "qfbv", # only for QF_BV
+            14: "qfnia", # only for QF_NIA
+            15: "qfnra", # only for QF_NRA
         }
 
     def __str__(self):
@@ -278,9 +281,11 @@ class SolverTactic(ASTNode):
     def legalActions(self, rollout = False):
         actions = [10]
         if self.logic == "QF_BV":
-            return actions
-        elif self.logic == "QF_NIA" or self.logic == "QF_NRA":
-            return actions + [11]
+            return actions + [13]
+        elif self.logic == "QF_NIA":
+            return actions + [11, 14]
+        elif self.logic == "QF_NRA":
+            return actions + [11, 15]
         elif self.logic == "SAT":
             return actions + [12]
         else: 

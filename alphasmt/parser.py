@@ -1,6 +1,6 @@
 # outdated: requires major changes
 
-SOLVER_TACTICS = ['smt', 'qfnra-nlsat', 'sat']
+SOLVER_TACTICS = ['smt', 'qfnra-nlsat', 'sat', 'qfbv', 'qfnia', 'qfnra']
 PREPROCESS_TACTICS = ['simplify', 'propagate-values', 'ctx-simplify', 'elim-uncnstr', 
                       'solve-eqs', 'purify-arith', 'max-bv-sharing', 'aig', 
                       'reduce-bv-size', 'ackermannize_bv', 'lia2card', 'card2bv',
