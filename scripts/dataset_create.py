@@ -11,8 +11,8 @@ def create_dir(target_dir, files):
         os.symlink(source_filepath, target_filepath)
 
 def main():
-    parser = argparse.ArgumentParser(description='Create train/valid/test dataset from files in the folder.')
-    parser.add_argument('--split_size', type=str, required=True, help='Size of formulas that should go into train/valid/test')
+    parser = argparse.ArgumentParser(description='Create split dataset from files in the folder.')
+    parser.add_argument('--split_size', type=str, required=True, help='Size of formulas that should go into train and valid, the rest goes into test')
     parser.add_argument('--benchmark_dir', type=str, required=True, help='Benchmark folder')
     parser.add_argument('--dataset_folder', type=str, required=True, help='the folder under the benchmark folder that stores the created dataset')
     parser.add_argument('--seed', type=int, default=42, help='Random seed')
@@ -24,11 +24,12 @@ def main():
     benchmark_dir = os.path.abspath(args.benchmark_dir)
     all_files = []
     for file in sorted(list(pathlib.Path(benchmark_dir).rglob("*.smt2"))):
-      all_files.append(str(file))
+        all_files.append(str(file))
+    all_file_size = len(all_files)
 
-
-    train_size, valid_size, test_size = list(map(int, args.split_size.split(' ')))
-    assert train_size + valid_size + test_size <= len(all_files), 'Sum of split sizes should be smaller than the total smt2 file size'
+    train_size, valid_size = list(map(int, args.split_size.split(' ')))
+    assert train_size + valid_size <= all_file_size, 'Sum of train&valid sizes should be smaller than the total smt2 file size'
+    test_size = all_file_size - train_size - valid_size
 
     dataset_folder = os.path.join(benchmark_dir, args.dataset_folder)
     assert(not os.path.exists(dataset_folder))
