@@ -255,6 +255,8 @@ class PreprocessTactic(ASTNode):
             return actions
         elif self.logic == "QF_LIA":
             return actions + [i for i in range(35,39)]
+        elif self.logic == "QF_LRA":
+            return actions
         else: 
             raise Exception("unexpected smt logic")
 
@@ -277,7 +279,8 @@ class SolverTactic(ASTNode):
             13: "qfbv", # only for QF_BV
             14: "qfnia", # only for QF_NIA
             15: "qfnra", # only for QF_NRA
-            16: "qflia" # only for QF_LIA
+            16: "qflia", # only for QF_LIA
+            17: "qflra" # only for QF_LRA
         }
 
     def __str__(self):
@@ -296,6 +299,8 @@ class SolverTactic(ASTNode):
             return actions + [11, 15]
         elif self.logic == "QF_LIA":
             return actions + [16]
+        elif self.logic == "QF_LRA":
+            return actions + [17]
         elif self.logic == "SAT":
             return actions + [12]
         else: 

@@ -18,6 +18,10 @@ PARAMS = {
     # 2: {
     #     "timeout": [2, 4, 8, 16]
     # },
+    # "smt"
+    10: {
+        "random_seed": [i * 100 for i in range(6)]
+    },
     # "simplify"
     20: { 
         "elim_and": ["true","false"],
