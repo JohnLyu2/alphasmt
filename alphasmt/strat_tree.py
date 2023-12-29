@@ -229,7 +229,12 @@ class PreprocessTactic(ASTNode):
             # 32 - 34 are QF_NIA only
             32: "lia2card",
             33: "card2bv",
-            34: "cofactor-term-ite"
+            34: "cofactor-term-ite",
+            # 35 - 38 are QF_LIA only
+            35: "propagate-ineqs",
+            36: "add-bounds",
+            37: "normalize-bounds",
+            38: "lia2pb",
         }
 
     def __str__(self):
@@ -248,6 +253,8 @@ class PreprocessTactic(ASTNode):
             return actions + [i for i in range(32,35)]
         elif self.logic == "QF_NRA" or self.logic == "SAT":
             return actions
+        elif self.logic == "QF_LIA":
+            return actions + [i for i in range(35,39)]
         else: 
             raise Exception("unexpected smt logic")
 
@@ -270,6 +277,7 @@ class SolverTactic(ASTNode):
             13: "qfbv", # only for QF_BV
             14: "qfnia", # only for QF_NIA
             15: "qfnra", # only for QF_NRA
+            16: "qflia" # only for QF_LIA
         }
 
     def __str__(self):
@@ -286,6 +294,8 @@ class SolverTactic(ASTNode):
             return actions + [11, 14]
         elif self.logic == "QF_NRA":
             return actions + [11, 15]
+        elif self.logic == "QF_LIA":
+            return actions + [16]
         elif self.logic == "SAT":
             return actions + [12]
         else: 
@@ -305,8 +315,9 @@ class S1Strategy(ASTNode):
         self.action_dict = {
             0: self.applySolverRule,  # <S1Strategy> := <SolverTactic>
             1: self.applyThenRule,  # <S1Strategy> := (then <PreprocessTactic> <S1Strategy>)
-            5: self.apply2BVRule,  # <S1Strategy>(QF_NIA) := (then nla2bv <S1Strategy>(QF_BV))
-            7: self.applyBitBlastRule  # <S1Strategy>(BV) := (then simplify bit-blast <S1Strategy>(SAT))
+            5: self.applyNla2BVRule,  # <S1Strategy>(QF_NIA/QF_NRA) := (then nla2bv <S1Strategy>(QF_BV))
+            7: self.applyBitBlastRule,  # <S1Strategy>(BV) := (then simplify bit-blast <S1Strategy>(SAT))
+            8: self.applyPb2BvRule # <S1Strategy>(QF_LIA) := (then pb2bv <S1Strategy>(QF_BV))
         }
 
     def __str__(self):
@@ -321,8 +332,8 @@ class S1Strategy(ASTNode):
             actions.append(5)
         if (self.logic == "QF_BV"):
             actions.append(7)
-        #     if self.bv1blast:
-        #         actions.append(6)
+        if (self.logic == "QF_LIA"):
+            actions.append(8)
         return actions
 
     def applySolverRule(self, params):
@@ -335,15 +346,21 @@ class S1Strategy(ASTNode):
         self.parent.replaceChild(preprocessor, self.pos)
         preprocessor.addChildren([S1Strategy(self.logic)])
 
-    def apply2BVRule(self, params):
-        nla2bv_node = TacticNode("nla2bv", params, 5)
+    def applyNla2BVRule(self, params):
+        nla2bv_node = TacticNode("nla2bv", params)
         self.parent.replaceChild(nla2bv_node, self.pos)
         qf_bv_strat = S1Strategy("QF_BV")
         nla2bv_node.addChildren([qf_bv_strat])
 
+    def applyPb2BvRule(self, params):
+        pb2bv_node = TacticNode("pb2bv", params)
+        self.parent.replaceChild(pb2bv_node, self.pos)
+        qf_bv_strat = S1Strategy("QF_BV")
+        pb2bv_node.addChildren([qf_bv_strat])
+
     def applyBitBlastRule(self, params):
-        simplify_node = TacticNode("simplify", None, 20)
-        bit_blast_node = TacticNode("bit-blast", params, 7)
+        simplify_node = TacticNode("simplify", None)
+        bit_blast_node = TacticNode("bit-blast", params)
         self.parent.replaceChild(simplify_node, self.pos)
         simplify_node.addChildren([bit_blast_node])
         bit_blast_node.addChildren([S1Strategy("SAT")])

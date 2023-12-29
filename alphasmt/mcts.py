@@ -12,6 +12,7 @@ log.addHandler(log_handler)
 INIT_Q = 0 
 
 # to-do: move to somewhere else later/change it into inputs
+# qf_lia may need to add some to simplify and ctx-simplify
 PARAMS = {
     # timeout
     # 2: {
@@ -42,7 +43,20 @@ PARAMS = {
         "inline_vars": ["true","false"],
         "factor": ["true","false"],
         "seed": [i * 5 for i in range(6)]
-    }
+    },
+    # "add-bounds"
+    36: {
+        "add_bound_lower": [-2, -4, -8, -16, -32],
+        "add_bound_upper": [2, 4, 8, 16, 32]
+    },
+    # "pb2bv"
+    8: {
+        "pb2bv_all_clauses_limit": [4, 8, 16, 32, 64],
+    },
+    # "lia2pb"
+    38: {
+        "lia2pb_max_bits": [16, 32, 64, 128],
+    },
 }
 
 class MCTSNode():
