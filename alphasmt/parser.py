@@ -10,7 +10,7 @@ TACTICAL_LST = ['then', 'if', 'using-params']
 PARAM_LST = ['inline_vars', 'seed', 'factor', 'elim_and', 'som', 'blast_distinct', 
              'flat', 'hi_div0', 'local_ctx', 'hoist_mul', 'push_ite_bv', 
              'pull_cheap_ite', 'nla2bv_max_bv_size', 'add_bound_lower', 
-             'add_bound_upper', 'pb2bv_all_clauses_limit', 'lia2pb_max_bits']
+             'add_bound_upper', 'pb2bv_all_clauses_limit', 'lia2pb_max_bits', 'random_seed']
 PRED_PROBES = ['>', 'is-qfbv-eq']
 NUM_PROBES = ['size', 'num-consts']
 MARKS = ['(', ')', ':']
