@@ -338,7 +338,8 @@ class S1Strategy(ASTNode):
         if (self.logic == "QF_BV"):
             actions.append(7)
         if (self.logic == "QF_LIA"):
-            actions.append(8)
+            # actions.append(8)
+            pass
         return actions
 
     def applySolverRule(self, params):

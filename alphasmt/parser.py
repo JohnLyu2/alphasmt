@@ -1,4 +1,4 @@
-SOLVER_TACTICS = ['smt', 'qfnra-nlsat', 'sat', 'qfbv', 'qfnia', 'qfnra', 'qflia']
+SOLVER_TACTICS = ['smt', 'qfnra-nlsat', 'sat', 'qfbv', 'qfnia', 'qfnra', 'qflia', 'qflra']
 PREPROCESS_TACTICS = ['simplify', 'propagate-values', 'ctx-simplify', 'elim-uncnstr', 
                       'solve-eqs', 'purify-arith', 'max-bv-sharing', 'aig', 
                       'reduce-bv-size', 'ackermannize_bv', 'lia2card', 'card2bv',
@@ -47,7 +47,7 @@ def Strategy_Tokenizer(s):
       elif token_name in PRED_PROBES or token_name in NUM_PROBES:
         token_type = 'probe'
       # if token_name is a number
-      elif token_name.isdigit():
+      elif token_name.lstrip('-').isdigit():
         token_type = 'number'
       elif token_name == 'true' or token_name == 'false':
         token_type = 'bool'
