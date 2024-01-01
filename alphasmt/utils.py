@@ -17,3 +17,4 @@ def parNReward(resLst, n, timeout):
     par_n = parN(resLst, n, timeout)
     maxParN = len(resLst) * timeout * n
     return 1 - par_n / maxParN
+

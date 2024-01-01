@@ -60,7 +60,7 @@ class Z3Runner(threading.Thread):
         res = lines[0]
 
         if res.startswith('(error'):
-            log.warn(f"Invalid strategy: {self.strategy}\n{res}")
+            log.warn(f"Error occured when strategy: {self.strategy}\ninstance: {self.smt_file}\nMessage: {res}")
             return self.id, None, None, None, self.smt_file
 
         rlimit = None

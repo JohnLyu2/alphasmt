@@ -115,12 +115,12 @@ def main():
     log.info(f"preprocess dict: {preprocess_dict}")
     log.info(f"converted selected strategies: {act_lst}")
 
-    s2_bench_dir = s2config['bench_dir']
+    s2benchDir = s2config['bench_dir']
     s2timeout = s2config["timeout"]
-    s2BenchLst = createBenchmarkList(s2_bench_dir, s2timeout, batch_size, tmp_folder, is_sorted=True)
+    s2benchLst = createBenchmarkList(s2benchDir, s2timeout, batch_size, tmp_folder, is_sorted=True)
 
     s2_res_dict = {}
-    s2evaluator = Z3StrategyEvaluator(s2BenchLst, s2timeout, batch_size, tmp_dir=tmp_folder)
+    s2evaluator = Z3StrategyEvaluator(s2benchLst, s2timeout, batch_size, tmp_dir=tmp_folder)
     for i in range(len(selected_strat)):
         strat = selected_strat[i]
         log.info(f"Stage 2 Caching: {i+1}/{len(selected_strat)}")
@@ -139,7 +139,7 @@ def main():
     log.info(f"Stage 2 Caching Time: {s2caching_end_time - s2startTime:.0f}")
     log.info("S2 MCTS Simulations Start")
 
-    run2 = MCTS_RUN(2, s2config, s2BenchLst, logic, value_type, log_folder, tmp_folder=tmp_folder)
+    run2 = MCTS_RUN(2, s2config, s2benchLst, logic, value_type, log_folder, tmp_folder=tmp_folder)
     run2.start()
     best_s2 = run2.getBestStrat()
     finalStratPath = os.path.join(log_folder, 'final_strategy.txt')
