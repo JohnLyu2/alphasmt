@@ -70,11 +70,11 @@ class TimeOutNode0(ASTNode):
 
     def legalActions(self, rollout = False):
         candidates = TIMEOUTS
-        return [c for c in candidates if int(c[1:]) < self.remain_time]
+        return [c for c in candidates if int(c[1:]) <= self.remain_time]
 
     def applyRule(self, action, params):
         assert (self.isLeaf())
-        assert action < self.remain_time
+        assert action <= self.remain_time
         branchingNode = TimeOutNode1(action)
         tryout_strat = S2Strategy(action, self.s1strat_lst, self.solver_dict, self.preprocess_dict)
         default_strat = S2Strategy(self.remain_time - action, self.s1strat_lst, self.solver_dict, self.preprocess_dict)
@@ -96,7 +96,7 @@ class TimeOutNode1(ASTNode):
         assert len(precede_strats) == 1
         precede_strat = precede_strats[0][0]
         precede_timeout = precede_strats[0][1]
-        assert (precede_timeout > self.timeout)
+        assert (precede_timeout >= self.timeout)
         prec_leftcp = [(copy.deepcopy(precede_strat), self.timeout)]
         prec_rightcp = [(copy.deepcopy(precede_strat), precede_timeout)]
         return self.children[0].getLnStrats(prec_leftcp) + self.children[1].getLnStrats(prec_rightcp)
