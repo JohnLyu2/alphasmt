@@ -96,7 +96,7 @@ class TimeOutNode1(ASTNode):
         assert len(precede_strats) == 1
         precede_strat = precede_strats[0][0]
         precede_timeout = precede_strats[0][1]
-        assert (precede_timeout > self.timeout)
+        assert (precede_timeout >= self.timeout)
         prec_leftcp = [(copy.deepcopy(precede_strat), self.timeout)]
         prec_rightcp = [(copy.deepcopy(precede_strat), precede_timeout)]
         return self.children[0].getLnStrats(prec_leftcp) + self.children[1].getLnStrats(prec_rightcp)
