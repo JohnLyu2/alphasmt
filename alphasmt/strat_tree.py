@@ -402,7 +402,7 @@ class S2Strategy(ASTNode):
         cur_path = self.getCurActPath()
         tac_actions = search_next_action(cur_path, self.s1strat_lst)
         legal_actions = tac_actions
-        if (not rollout) and (len(tac_actions) > 1) and (self.timeout > TIMEOUTS[0]):
+        if (not rollout) and (len(tac_actions) > 1) and (self.timeout > int(TIMEOUTS[0][1:])):
             legal_actions.append(2) # timeout rule
         return legal_actions 
     

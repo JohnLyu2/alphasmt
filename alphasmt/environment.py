@@ -45,11 +45,7 @@ class StrategyGame():
         while not self.isTerminal():            
             actions = self.legalActions(rollout = True)
             action = random.choice(actions)
-            # action = actions[0]
             params = None
-            # if action in self.probes.keys():
-            #     value = self.probes[action]['value'][1]
-            #     params = {'value': value}
             self.step(action, params)
 
     # every entry in the resLst is (solved, time)
