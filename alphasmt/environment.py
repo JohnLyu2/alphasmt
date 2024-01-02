@@ -35,10 +35,10 @@ class StrategyGame():
         return self.stratAST.legalActions(rollout)
 
     def step(self, action, params):
-        a = action
-        if isinstance(action, str) and action.startswith('v'):
-            a = int(action[1:])
-        self.stratAST.applyRule(a, params)
+        # a = action
+        # if isinstance(action, str) and action.startswith('v'):
+        #     a = int(action[1:])
+        self.stratAST.applyRule(action, params)
 
     def rollout(self):
         assert(not self.isTerminal())

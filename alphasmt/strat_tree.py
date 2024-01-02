@@ -74,10 +74,11 @@ class TimeOutNode0(ASTNode):
 
     def applyRule(self, action, params):
         assert (self.isLeaf())
-        assert action <= self.remain_time
-        branchingNode = TimeOutNode1(action)
-        tryout_strat = S2Strategy(action, self.s1strat_lst, self.solver_dict, self.preprocess_dict)
-        default_strat = S2Strategy(self.remain_time - action, self.s1strat_lst, self.solver_dict, self.preprocess_dict)
+        assert (action in self.legalActions())
+        a_value = int(action[1:])
+        branchingNode = TimeOutNode1(a_value)
+        tryout_strat = S2Strategy(a_value, self.s1strat_lst, self.solver_dict, self.preprocess_dict)
+        default_strat = S2Strategy(self.remain_time - a_value, self.s1strat_lst, self.solver_dict, self.preprocess_dict)
         self.parent.replaceChild(branchingNode, self.pos)
         branchingNode.addChildren([tryout_strat, default_strat])
 
@@ -124,10 +125,8 @@ class PredicateNode(ASTNode):
             52: "size"
         }
 
-#     def __str__(self):
-#         if self.isLeaf():
-#             return f"<Probe + Value>"
-#         return str(self.children[0])
+    def __str__(self):
+        return f"<PredicateNode>"
     
     def isTerminal(self):
         return False
@@ -207,9 +206,6 @@ class TacticNode(ASTNode):
         if self.isLeaf():
             return precede_strats
         return self.children[0].getLnStrats(precede_strats)
-
-    # def clone(self):
-    #     return TacticTerminal(self.name, self.params) # name and params are not modified; no deep copy here
 
 class PreprocessTactic(ASTNode):
     def __init__(self, logic):
@@ -374,7 +370,7 @@ class S1Strategy(ASTNode):
         bit_blast_node.addChildren([S1Strategy("SAT")])
 
 class S2Strategy(ASTNode):
-    def __init__(self, timeout, s1_lst, solver_dict, preprocess_dict):
+    def __init__(self, timeout, s1_lst, solver_dict, preprocess_dict, if_depth):
         super().__init__()
         self.timeout = timeout
         self.action_lst = [2,# timeout rule
@@ -382,6 +378,7 @@ class S2Strategy(ASTNode):
         self.solver_action_dict = solver_dict
         self.preprocess_action_dict = preprocess_dict
         self.s1strat_lst = s1_lst
+        self.if_depth = if_depth
 
     def __str__(self):
         return f"<S2Strategy>"
@@ -436,7 +433,108 @@ class S2Strategy(ASTNode):
         else:
             raise Exception("unexpected action")
 
-# class StrategyNonterm(ASTNode):
+
+
+# probably Stage 1 and Stage 2 strategies can be merged
+class StrategyAST():
+    def __init__(self, stage, logic, timeout, s1_lst = None, solver_dict = None, preprocess_dict = None):
+        self.logic = logic
+        self.timeout = timeout
+        self.root = Root()
+        if stage == 1:
+            self.root.addChildren([S1Strategy(logic)])
+        else:
+            self.root.addChildren([S2Strategy(timeout, s1_lst, solver_dict, preprocess_dict)])
+
+    def __str__(self):
+        return str(self.root)
+
+    # def smt2str(self):
+    #     assert self.isTerminal()
+    #     return self.root.children[0].smt2str()
+
+    @staticmethod
+    def _findFstNonTermRec(nonterm_stack):
+        if not len(nonterm_stack):
+            return None
+        node2Search = nonterm_stack.pop()
+        if not node2Search.isTerminal():
+            return node2Search
+        else:
+            for childNode in reversed(node2Search.children):
+                nonterm_stack.append(childNode)
+        return StrategyAST._findFstNonTermRec(nonterm_stack)
+
+    # return the depth-first first nontermial node in the tree; if nonexist, return None
+    def findFstNonTerm(self):
+        nonterm_stack = [self.root]
+        return StrategyAST._findFstNonTermRec(nonterm_stack)
+
+    def isTerminal(self):
+        return not bool(self.findFstNonTerm())
+
+    def legalActions(self, rollout = False):
+        if self.isTerminal(): return []
+        return self.findFstNonTerm().legalActions(rollout)
+
+    def applyRule(self, action, params):
+        assert (not self.isTerminal())
+        node = self.findFstNonTerm()
+        node.applyRule(action, params)
+
+    # do not consider predicate branching for now
+    def get_linear_strategies(self):
+        assert self.isTerminal()
+        return self.root.getLnStrats(self.timeout)
+         
+# CFG derivation tree
+# class DerivationAST():
+#     def __init__(self, logic, timeout, root = None):
+#         self.logic = logic
+#         if root is None:
+#             self.root = StrategyNonterm(logic, timeout, timeout_status = 0, branch_status = 0, parent = None)
+#         else:
+#             self.root = root
+
+#     def __str__(self):
+#         return str(self.root)
+    
+#     @staticmethod
+#     def _findFstNonTermRec(search_stack):
+#         if not len(search_stack):
+#             return None
+#         node2Search = search_stack.pop()
+#         if node2Search.isLeaf():
+#             return node2Search
+#         else:
+#             for childNode in reversed(node2Search.children):
+#                 if not childNode.isTerminal():
+#                     search_stack.append(childNode)
+#         return DerivationAST._findFstNonTermRec(search_stack)
+
+#     # return the depth-first first nontermial node in the tree; if nonexist, return None
+#     def findFstNonTerm(self):
+#         searchStack = [self.root]
+#         return DerivationAST._findFstNonTermRec(searchStack)
+
+#     def isTerminal(self):
+#         return not bool(self.findFstNonTerm())
+
+#     def legalActions(self, rollout = False):
+#         if self.isTerminal(): return []
+#         return self.findFstNonTerm().legalActions(rollout)
+
+#     def applyRule(self, action, params):
+#         assert (not self.isTerminal())
+#         node = self.findFstNonTerm()
+#         node.applyRule(action, params)
+
+    # def clone(self):
+    #     rootCopy = self.root.clone()
+    #     return DerivationAST(self.logic, rootCopy)
+
+
+    # class StrategyNonterm(ASTNode):
 #     def __init__(self, logic, timeout, timeout_status, branch_status, parent, children = None, expand_type = None, bv1blast = True):
 #         super().__init__(children, expand_type, parent)
 #         self.logic = logic
@@ -538,101 +636,3 @@ class S2Strategy(ASTNode):
     # def clone(self):
     #     childrenCp = self.childrenClone()
     #     return StrategyNonterm(self.logic, childrenCp, self.expandType)
-
-# probably Stage 1 and Stage 2 strategies can be merged
-class StrategyAST():
-    def __init__(self, stage, logic, timeout, s1_lst = None, solver_dict = None, preprocess_dict = None):
-        self.logic = logic
-        self.timeout = timeout
-        self.root = Root()
-        if stage == 1:
-            self.root.addChildren([S1Strategy(logic)])
-        else:
-            self.root.addChildren([S2Strategy(timeout, s1_lst, solver_dict, preprocess_dict)])
-
-    def __str__(self):
-        return str(self.root)
-
-    # def smt2str(self):
-    #     assert self.isTerminal()
-    #     return self.root.children[0].smt2str()
-
-    @staticmethod
-    def _findFstNonTermRec(nonterm_stack):
-        if not len(nonterm_stack):
-            return None
-        node2Search = nonterm_stack.pop()
-        if not node2Search.isTerminal():
-            return node2Search
-        else:
-            for childNode in reversed(node2Search.children):
-                nonterm_stack.append(childNode)
-        return StrategyAST._findFstNonTermRec(nonterm_stack)
-
-    # return the depth-first first nontermial node in the tree; if nonexist, return None
-    def findFstNonTerm(self):
-        nonterm_stack = [self.root]
-        return StrategyAST._findFstNonTermRec(nonterm_stack)
-
-    def isTerminal(self):
-        return not bool(self.findFstNonTerm())
-
-    def legalActions(self, rollout = False):
-        if self.isTerminal(): return []
-        return self.findFstNonTerm().legalActions(rollout)
-
-    def applyRule(self, action, params):
-        assert (not self.isTerminal())
-        node = self.findFstNonTerm()
-        node.applyRule(action, params)
-
-    # do not consider predicate branching for now
-    def get_linear_strategies(self):
-        assert self.isTerminal()
-        return self.root.getLnStrats(self.timeout)
-         
-# CFG derivation tree
-# class DerivationAST():
-#     def __init__(self, logic, timeout, root = None):
-#         self.logic = logic
-#         if root is None:
-#             self.root = StrategyNonterm(logic, timeout, timeout_status = 0, branch_status = 0, parent = None)
-#         else:
-#             self.root = root
-
-#     def __str__(self):
-#         return str(self.root)
-    
-#     @staticmethod
-#     def _findFstNonTermRec(search_stack):
-#         if not len(search_stack):
-#             return None
-#         node2Search = search_stack.pop()
-#         if node2Search.isLeaf():
-#             return node2Search
-#         else:
-#             for childNode in reversed(node2Search.children):
-#                 if not childNode.isTerminal():
-#                     search_stack.append(childNode)
-#         return DerivationAST._findFstNonTermRec(search_stack)
-
-#     # return the depth-first first nontermial node in the tree; if nonexist, return None
-#     def findFstNonTerm(self):
-#         searchStack = [self.root]
-#         return DerivationAST._findFstNonTermRec(searchStack)
-
-#     def isTerminal(self):
-#         return not bool(self.findFstNonTerm())
-
-#     def legalActions(self, rollout = False):
-#         if self.isTerminal(): return []
-#         return self.findFstNonTerm().legalActions(rollout)
-
-#     def applyRule(self, action, params):
-#         assert (not self.isTerminal())
-#         node = self.findFstNonTerm()
-#         node.applyRule(action, params)
-
-    # def clone(self):
-    #     rootCopy = self.root.clone()
-    #     return DerivationAST(self.logic, rootCopy)
