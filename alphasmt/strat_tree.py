@@ -3,7 +3,7 @@ from alphasmt.selector import search_next_action
 
 MAX_TIMEOUT_STRAT = 3
 MAX_BRANCH_DEPTH = 2
-TIMEOUTS = [1, 2, 4, 8]
+TIMEOUTS = ["v1", "v2", "v4", "v8"]
 
 class ASTNode():
     def __init__(self):
@@ -70,7 +70,7 @@ class TimeOutNode0(ASTNode):
 
     def legalActions(self, rollout = False):
         candidates = TIMEOUTS
-        return [t for t in candidates if t < self.remain_time]
+        return [c for c in candidates if int(c[1:]) <= self.remain_time]
 
     def applyRule(self, action, params):
         assert (self.isLeaf())
@@ -113,25 +113,27 @@ class TimeOutNode1(ASTNode):
 #     def isTerminal(self):
 #         return True
 
-# class ProbeSelectorNonterm(ASTNode):
-#     def __init__(self):
-#         super().__init__()
-#         self.action_dict = {
-#             50: "num-consts", 
-#             51: "num-exprs",
-#             52: "size"
-#         }
+class PredicateNode(ASTNode):
+    def __init__(self, logic):
+        super().__init__()
+        self.logic = logic
+        # for now no binary predicate; do not consider different predicates for different logics
+        self.action_dict = {
+            50: "num-consts", 
+            51: "num-exprs",
+            52: "size"
+        }
 
 #     def __str__(self):
 #         if self.isLeaf():
 #             return f"<Probe + Value>"
 #         return str(self.children[0])
     
-#     def isTerminal(self):
-#         return False
+    def isTerminal(self):
+        return False
     
-#     def legalActions(self, rollout = False):
-#         return list(self.action_dict.keys())
+    def legalActions(self, rollout = False):
+        return list(self.action_dict.keys())
     
 #     # to be checked
 #     def applyRule(self, action, params):
@@ -418,6 +420,9 @@ class S2Strategy(ASTNode):
 
     def applyTimeoutRule(self):
         self.parent.replaceChild(TimeOutNode0(self.timeout, self.s1strat_lst, self.solver_action_dict, self.preprocess_action_dict), self.pos)
+
+    def applyIfRule(self, params):
+        pass
 
     def applyRule(self, action, params): # params is no use here
         assert (self.isLeaf())
