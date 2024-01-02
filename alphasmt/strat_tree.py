@@ -370,7 +370,7 @@ class S1Strategy(ASTNode):
         bit_blast_node.addChildren([S1Strategy("SAT")])
 
 class S2Strategy(ASTNode):
-    def __init__(self, timeout, s1_lst, solver_dict, preprocess_dict, if_depth):
+    def __init__(self, timeout, s1_lst, solver_dict, preprocess_dict, if_depth=0):
         super().__init__()
         self.timeout = timeout
         self.action_lst = [2,# timeout rule
