@@ -74,7 +74,7 @@ class TimeOutNode0(ASTNode):
 
     def applyRule(self, action, params):
         assert (self.isLeaf())
-        assert (action in self.legalActions())
+        assert action <= self.remain_time
         branchingNode = TimeOutNode1(action)
         tryout_strat = S2Strategy(action, self.s1strat_lst, self.solver_dict, self.preprocess_dict)
         default_strat = S2Strategy(self.remain_time - action, self.s1strat_lst, self.solver_dict, self.preprocess_dict)
