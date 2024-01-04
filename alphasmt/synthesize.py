@@ -1,51 +1,21 @@
 import time
 import random
-import pathlib
 import csv
 import os
+import pathlib
+from z3 import *
 
 from alphasmt.evaluator import Z3StrategyEvaluator
 from alphasmt.mcts import MCTS_RUN
 from alphasmt.selector import * 
+from alphasmt.utils import calculatePercentile, write_strat_res_to_csv
 
+from alphasmt.strat_tree import PERCENTILES
 VALUE_TYPE = 'par10' # hard code for now
-
-def write_strat_res_to_csv(res_dict, csv_path, bench_lst):
-    with open(csv_path, 'w') as f:
-        writer = csv.writer(f)
-        # write header
-        writer.writerow(["strat"] + bench_lst)
-        for strat in res_dict:
-            res_lst = []
-            for res_tuple in res_dict[strat]:
-                if res_tuple[0]:
-                    res_lst.append(res_tuple[1])
-                else:
-                    res_lst.append(-res_tuple[1])
-            writer.writerow([strat] + res_lst)
-
-def read_strat_res_from_csv(csv_path):
-    res_dict = {}
-    with open(csv_path, 'r') as f:
-        reader = csv.reader(f)
-        header = next(reader)
-        bench_lst = header[1:]
-        for row in reader:
-            strat = row[0]
-            res_lst = []
-            for res in row[1:]:
-                stime = float(res)
-                if stime < 0:
-                    res_lst.append((False, -stime))
-                else:
-                    res_lst.append((True, stime))
-            res_dict[strat] = res_lst
-    return res_dict, bench_lst
 
 def createBenchmarkList(benchmark_directory, timeout, batchSize, tmp_folder, is_sorted):
     benchmarkLst = [str(p) for p in sorted(list(pathlib.Path(benchmark_directory).rglob(f"*.smt2")))]
-    if not is_sorted:
-        return benchmarkLst
+    if not is_sorted: return benchmarkLst
     evaluator = Z3StrategyEvaluator(benchmarkLst, timeout, batchSize, tmp_dir=tmp_folder)
     resLst = evaluator.getResLst(None)
     # par2 list from resLst; for each entry (solved, time) in resLst, if solved, return time; else return 2 * timeout
@@ -53,6 +23,37 @@ def createBenchmarkList(benchmark_directory, timeout, batchSize, tmp_folder, is_
     # sort benchmarkLst resLst into a ascending list by par2Lst
     benchmarkLst = [x for _, x in sorted(zip(par2Lst, benchmarkLst))]
     return benchmarkLst
+
+def createProbeStats(bench_lst):
+    numConstsLst = []
+    numExprsLst = []
+    sizeLst = []
+    probeRecords = []
+    for smt_path in bench_lst:
+        instanceDict = {}
+        formula = parse_smt2_file(smt_path)
+        constProbe = Probe('num-consts')
+        exprProbe = Probe('num-exprs')
+        sizeProbe = Probe('size')
+        goal = Goal()
+        goal.add(formula)
+        numConsts = constProbe(goal)
+        numConstsLst.append(numConsts)
+        instanceDict['num-consts'] = numConsts
+        numExprs = exprProbe(goal)
+        numExprsLst.append(numExprs)
+        instanceDict['num-exprs'] = numExprs
+        size = sizeProbe(goal)
+        sizeLst.append(size)
+        instanceDict['size'] = size
+        probeRecords.append(instanceDict)
+    # get 90 percentile, 70 percentile and median from lists
+    probeStats = {}
+    # contents of probeStats['num-consts'] is another dict, key is the percentile and value is the value
+    probeStats['num-consts'] = {percentile: calculatePercentile(numConstsLst, percentile) for percentile in PERCENTILES}
+    probeStats['num-exprs'] = {percentile: calculatePercentile(numExprsLst, percentile) for percentile in PERCENTILES}
+    probeStats['size'] = {percentile: calculatePercentile(sizeLst, percentile) for percentile in PERCENTILES}
+    return probeStats, probeRecords
 
 def stage1_synthesize(config, stream_logger, log_folder):
     startTime = time.time()
@@ -121,16 +122,22 @@ def stage2_synthesize(res_dict, bench_lst, config, stream_logger, log_folder):
     for strat in s1strat2acts:
         s2_res_dict_acts[s1strat2acts[strat]] = res_dict[strat]
 
-    s2config = config['s2config']
-    s2config['s1_strats'] = act_lst
-    s2config['solver_dict'] = solver_dict
-    s2config['preprocess_dict'] = preprocess_dict
-    s2config['res_cache'] = s2_res_dict_acts
+    s2dict = {}
+    s2dict['s1_strats'] = act_lst
+    s2dict['solver_dict'] = solver_dict
+    s2dict['preprocess_dict'] = preprocess_dict
+    s2dict['res_cache'] = s2_res_dict_acts
     logic = config['logic']
     tmp_folder = config['temp_folder']
 
     s2startTime = time.time()
     stream_logger.info(f"S2 MCTS Simulations Start")
+
+    probeStats, probeRecords = createProbeStats(bench_lst)
+    s2dict['probe_stats'] = probeStats
+    s2dict['probe_records'] = probeRecords
+    s2config = config['s2config']
+    s2config["s2dict"] = s2dict
 
     run2 = MCTS_RUN(2, s2config, bench_lst, logic, VALUE_TYPE, log_folder, tmp_folder=tmp_folder)
     run2.start()

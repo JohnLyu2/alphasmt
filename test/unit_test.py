@@ -32,3 +32,5 @@ def test_tokenizer():
     assert len(tlst0) == 14
     assert len(tlst1) == 1
     assert len(tlst2) == 7
+
+    

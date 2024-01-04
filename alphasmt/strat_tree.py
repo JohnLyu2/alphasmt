@@ -2,8 +2,9 @@ import copy
 from alphasmt.selector import search_next_action
 
 MAX_TIMEOUT_STRAT = 3
-MAX_BRANCH_DEPTH = 2
+MAX_IF_DEPTH = 3 
 TIMEOUTS = ["v1", "v2", "v4", "v8"]
+PERCENTILES = ["90p", "70p", "50p"]
 
 class ASTNode():
     def __init__(self):
@@ -51,16 +52,14 @@ class Root(ASTNode):
     def isTerminal(self):
         return True
     
-    def getLnStrats(self, timeout):
-        return self.children[0].getLnStrats([([], timeout)])
+    def getLnStrats(self, timeout, probe_record):
+        return self.children[0].getLnStrats([([], timeout)], probe_record)
     
 class TimeOutNode0(ASTNode):
-    def __init__(self, remain_time, s1_lst, solver_dict, preprocess_dict):
+    def __init__(self, remain_time, s2dict):
         super().__init__()
         self.remain_time = remain_time
-        self.s1strat_lst = s1_lst
-        self.solver_dict = solver_dict
-        self.preprocess_dict = preprocess_dict
+        self.s2dict = s2dict
 
     def __str__(self):
         return f"<TimeOutNode>"
@@ -77,8 +76,9 @@ class TimeOutNode0(ASTNode):
         assert (action in self.legalActions())
         a_value = int(action[1:])
         branchingNode = TimeOutNode1(a_value)
-        tryout_strat = S2Strategy(a_value, self.s1strat_lst, self.solver_dict, self.preprocess_dict)
-        default_strat = S2Strategy(self.remain_time - a_value, self.s1strat_lst, self.solver_dict, self.preprocess_dict)
+        # currently no branching after timeout tryout
+        tryout_strat = S2Strategy(a_value, self.s2dict, MAX_IF_DEPTH)
+        default_strat = S2Strategy(self.remain_time - a_value, self.s2dict, MAX_IF_DEPTH)
         self.parent.replaceChild(branchingNode, self.pos)
         branchingNode.addChildren([tryout_strat, default_strat])
 
@@ -93,31 +93,56 @@ class TimeOutNode1(ASTNode):
     def isTerminal(self):
         return True
 
-    def getLnStrats(self, precede_strats):
+    def getLnStrats(self, precede_strats, probe_record):
         assert len(precede_strats) == 1
         precede_strat = precede_strats[0][0]
         precede_timeout = precede_strats[0][1]
         assert (precede_timeout >= self.timeout)
         prec_leftcp = [(copy.deepcopy(precede_strat), self.timeout)]
         prec_rightcp = [(copy.deepcopy(precede_strat), precede_timeout)]
-        return self.children[0].getLnStrats(prec_leftcp) + self.children[1].getLnStrats(prec_rightcp)
-
-# class ProbeTerminal(ASTNode):
-#     def __init__(self, name, value, parent):
-#         super().__init__()
-#         self.name = name
-#         self.value = value
-
-#     def __str__(self):
-#         return f"{self.name} {self.value}"
-
-#     def isTerminal(self):
-#         return True
+        return self.children[0].getLnStrats(prec_leftcp, probe_record) + self.children[1].getLnStrats(prec_rightcp, probe_record)
 
 class PredicateNode(ASTNode):
-    def __init__(self, logic):
+    def __init__(self, name, prob_stats):
         super().__init__()
-        self.logic = logic
+        self.name = name
+        self.prob_stats = prob_stats
+        self.is_selected = False
+
+    def __str__(self):
+        value_str = "<Value>"
+        if self.is_selected:
+            value_str = str(self.value)
+        return f"(if (> {self.name} {value_str}) {self.children[0]} {self.children[1]})"
+
+    def isTerminal(self):
+        return self.is_selected
+    
+    def legalActions(self, rollout = False):
+        return PERCENTILES
+    
+    def applyRule(self, action, params):
+        assert (not self.isTerminal())
+        assert (action in self.legalActions())
+        self.value = int(self.prob_stats[self.name][action])
+        self.is_selected = True
+
+    def getLnStrats(self, precede_strats, probe_record):
+        assert self.isTerminal()
+        assert len(precede_strats) == 1
+        bench_value = int(probe_record[self.name])
+        if bench_value > self.value:
+            return self.children[0].getLnStrats(precede_strats, probe_record)
+        else:
+            return self.children[1].getLnStrats(precede_strats, probe_record)
+
+class ProbeNode(ASTNode):
+    def __init__(self, depth, timeout, s2dict):
+        super().__init__()
+        self.if_depth = depth
+        self.timeout = timeout
+        self.s2dict = s2dict
+        self.probe_stats = s2dict['probe_stats']
         # for now no binary predicate; do not consider different predicates for different logics
         self.action_dict = {
             50: "num-consts", 
@@ -126,22 +151,23 @@ class PredicateNode(ASTNode):
         }
 
     def __str__(self):
-        return f"<PredicateNode>"
+        return f"<ProbeNode>"
     
     def isTerminal(self):
         return False
     
     def legalActions(self, rollout = False):
         return list(self.action_dict.keys())
-    
-#     # to be checked
-#     def applyRule(self, action, params):
-#         assert (self.isLeaf())
-#         assert (action in self.legalActions())
-#         probe_name = self.action_dict[action]
-#         value = params['value']
-#         selected = ProbeTerminal(probe_name, value, self)
-#         self.children.append(selected)
+
+    def applyRule(self, action, params):
+        assert (self.isLeaf())
+        assert (action in self.legalActions())
+        probe_name = self.action_dict[action]
+        pred_node = PredicateNode(probe_name, self.probe_stats)
+        self.parent.replaceChild(pred_node, self.pos)
+        left_strat = S2Strategy(self.timeout, self.s2dict, self.if_depth)
+        right_strat = S2Strategy(self.timeout, self.s2dict, self.if_depth)
+        pred_node.addChildren([left_strat, right_strat])
 
 class TacticNode(ASTNode):
     def __init__(self, name, params, s2actID = None): # tactic terminals do not have children 
@@ -200,12 +226,12 @@ class TacticNode(ASTNode):
     def isTerminal(self):
         return True
 
-    def getLnStrats(self, precede_strats):
+    def getLnStrats(self, precede_strats, probe_record):
         for strat_tup in precede_strats:
             strat_tup[0].append(self.s2actID)
         if self.isLeaf():
             return precede_strats
-        return self.children[0].getLnStrats(precede_strats)
+        return self.children[0].getLnStrats(precede_strats, probe_record)
 
 class PreprocessTactic(ASTNode):
     def __init__(self, logic):
@@ -370,15 +396,19 @@ class S1Strategy(ASTNode):
         bit_blast_node.addChildren([S1Strategy("SAT")])
 
 class S2Strategy(ASTNode):
-    def __init__(self, timeout, s1_lst, solver_dict, preprocess_dict, if_depth=0):
+    def __init__(self, timeout, s2dict, if_depth):
         super().__init__()
         self.timeout = timeout
-        self.action_lst = [2,# timeout rule
+        self.action_lst = [2, # timeout rule
+                           3, # if rule
                            ]
-        self.solver_action_dict = solver_dict
-        self.preprocess_action_dict = preprocess_dict
-        self.s1strat_lst = s1_lst
+        self.s2dict = s2dict
+        self.solver_action_dict = s2dict['solver_dict']
+        self.preprocess_action_dict = s2dict['preprocess_dict']
+        self.s1strat_lst = s2dict['s1_strats']
+        # self.probe_stats = s2dict['probe_stats']
         self.if_depth = if_depth
+        # self.probe_records = probe_records
 
     def __str__(self):
         return f"<S2Strategy>"
@@ -401,6 +431,8 @@ class S2Strategy(ASTNode):
         legal_actions = tac_actions
         if (not rollout) and (len(tac_actions) > 1) and (self.timeout > int(TIMEOUTS[0][1:])):
             legal_actions.append(2) # timeout rule
+        if (not rollout) and (self.if_depth < MAX_IF_DEPTH):
+            legal_actions.append(3)
         return legal_actions 
     
     def applySolverRule(self, action):
@@ -412,20 +444,22 @@ class S2Strategy(ASTNode):
         tactic, tac_params = self.preprocess_action_dict[action]
         tac_node = TacticNode(tactic, tac_params, action)
         self.parent.replaceChild(tac_node, self.pos)
-        s2strat = S2Strategy(self.timeout, self.s1strat_lst, self.solver_action_dict, self.preprocess_action_dict)
+        s2strat = S2Strategy(self.timeout, self.s2dict, MAX_IF_DEPTH)
         tac_node.addChildren([s2strat])
 
     def applyTimeoutRule(self):
-        self.parent.replaceChild(TimeOutNode0(self.timeout, self.s1strat_lst, self.solver_action_dict, self.preprocess_action_dict), self.pos)
+        self.parent.replaceChild(TimeOutNode0(self.timeout, self.s2dict), self.pos)
 
-    def applyIfRule(self, params):
-        pass
+    def applyIfRule(self):
+        self.parent.replaceChild(ProbeNode(self.if_depth+1, self.timeout, self.s2dict), self.pos)
 
     def applyRule(self, action, params): # params is no use here
         assert (self.isLeaf())
         assert (action in self.legalActions())
         if action == 2: # timeout rule
             self.applyTimeoutRule()
+        elif action == 3: # if rule
+            self.applyIfRule()
         elif action in self.solver_action_dict:
             self.applySolverRule(action)
         elif action in self.preprocess_action_dict:
@@ -434,18 +468,17 @@ class S2Strategy(ASTNode):
             raise Exception("unexpected action")
 
 
-
-# probably Stage 1 and Stage 2 strategies can be merged
 class StrategyAST():
-    def __init__(self, stage, logic, timeout, s1_lst = None, solver_dict = None, preprocess_dict = None):
+    def __init__(self, stage, logic, timeout, s2config = None):
         self.logic = logic
         self.timeout = timeout
         self.root = Root()
         if stage == 1:
             self.root.addChildren([S1Strategy(logic)])
         else:
-            self.root.addChildren([S2Strategy(timeout, s1_lst, solver_dict, preprocess_dict)])
-
+            assert s2config
+            s2dict = s2config['s2dict']
+            self.root.addChildren([S2Strategy(timeout, s2dict, if_depth = 0)])
     def __str__(self):
         return str(self.root)
 
@@ -482,10 +515,9 @@ class StrategyAST():
         node = self.findFstNonTerm()
         node.applyRule(action, params)
 
-    # do not consider predicate branching for now
-    def get_linear_strategies(self):
+    def get_linear_strategies(self, probe_record):
         assert self.isTerminal()
-        return self.root.getLnStrats(self.timeout)
+        return self.root.getLnStrats(self.timeout, probe_record)
          
 # CFG derivation tree
 # class DerivationAST():

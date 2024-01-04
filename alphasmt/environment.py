@@ -1,21 +1,17 @@
 import random
-import copy
 from alphasmt.strat_tree import StrategyAST
 from alphasmt.evaluator import Z3StrategyEvaluator
 from alphasmt.utils import solvedNumReward, parNReward
 
-
 class StrategyGame():
-    def __init__(self, stage, training_lst, logic, timeout, s2_config, batch_size, tmp_dir):
+    def __init__(self, stage, training_lst, logic, timeout, sconfig, batch_size, tmp_dir):
         self.stage = stage
         self.benchmarks = training_lst
         if stage == 1:
             self.stratAST = StrategyAST(1, logic, timeout)
         else:
-            s1_strats = s2_config['s1_strats']
-            solver_dict = s2_config['solver_dict']
-            preprocess_dict = s2_config['preprocess_dict']
-            self.stratAST = StrategyAST(2, logic, timeout, s1_strats, solver_dict, preprocess_dict)
+            self.stratAST = StrategyAST(2, logic, timeout, sconfig)
+            self.probe_records = sconfig["s2dict"]["probe_records"]
         self.simulator = Z3StrategyEvaluator(training_lst, timeout, batch_size, tmp_dir) # shallow copy for clone
         self.timeout = timeout
 
@@ -35,9 +31,6 @@ class StrategyGame():
         return self.stratAST.legalActions(rollout)
 
     def step(self, action, params):
-        # a = action
-        # if isinstance(action, str) and action.startswith('v'):
-        #     a = int(action[1:])
         self.stratAST.applyRule(action, params)
 
     def rollout(self):
@@ -57,8 +50,9 @@ class StrategyGame():
         database[stratStr] = resLst
         return resLst
 
-    def _get_linear_strategies(self):
-        return self.stratAST.get_linear_strategies()
+    def _get_linear_strategies(self, benchID):
+        probe_record = self.probe_records[benchID]
+        return self.stratAST.get_linear_strategies(probe_record)
 
     # this function to be tested
     @staticmethod
@@ -90,7 +84,7 @@ class StrategyGame():
         res_lst = []
         for benchID in range(len(self.benchmarks)):
             # later add bench-specific ln strats
-            ln_strats = self._get_linear_strategies()
+            ln_strats = self._get_linear_strategies(benchID)
             res_tuple = StrategyGame.solve_with_cache(benchID, ln_strats, database, self.timeout)
             res_lst.append(res_tuple)
         return res_lst
@@ -110,8 +104,3 @@ class StrategyGame():
             return parNReward(resLst, 10, self.timeout)
         else:
             raise Exception(f"Unknown value type {reward_type}")
-
-    # def clone(self):
-    #     cp = copy.copy(self)
-    #     cp.stratAST = self.stratAST.clone()
-    #     return cp

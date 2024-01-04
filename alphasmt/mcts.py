@@ -178,7 +178,7 @@ class MCTS_RUN():
             self.resDatabase = {}
         else:
             self.c_ucb = None
-            self.resDatabase = config['res_cache']
+            self.resDatabase = config['s2dict']['res_cache']
         self.sim_log = logging.getLogger(f"s{self.stage}mcts")
         self.sim_log.propagate = False
         self.sim_log.setLevel(logging.DEBUG)
