@@ -2,6 +2,7 @@ import logging
 import math
 import copy
 from alphasmt.environment import StrategyGame
+from alphasmt.params import create_params_dict
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.INFO)
@@ -11,60 +12,9 @@ log.addHandler(log_handler)
 
 INIT_Q = 0 
 
-# to-do: move to somewhere else later/change it into inputs
-# qf_lia may need to add some to simplify and ctx-simplify
-PARAMS = {
-    # timeout
-    # 2: {
-    #     "timeout": [2, 4, 8, 16]
-    # },
-    # "smt"
-    10: {
-        "random_seed": [i * 100 for i in range(6)]
-    },
-    # "simplify"
-    20: { 
-        "elim_and": ["true","false"],
-        "som": ["true","false"],
-        "blast_distinct": ["true","false"],
-        "flat": ["true","false"],
-        "hi_div0": ["true","false"],
-        "local_ctx": ["true","false"],
-        "hoist_mul": ["true","false"],
-        "push_ite_bv": ["true","false"],
-        "pull_cheap_ite": ["true","false"]
-    },
-    # "propagate-values"
-    21: {
-        "push_ite_bv": ["true","false"]
-    },
-    # "nla2bv" 
-    5: {
-        "nla2bv_max_bv_size": [4, 8, 16, 32, 64, 128]
-    },
-    # "qfnra-nlsat" 
-    11: {
-        "inline_vars": ["true","false"],
-        "factor": ["true","false"],
-        "seed": [i * 5 for i in range(6)]
-    },
-    # "add-bounds"
-    36: {
-        "add_bound_lower": [-2, -4, -8, -16, -32],
-        "add_bound_upper": [2, 4, 8, 16, 32]
-    },
-    # "pb2bv"
-    8: {
-        "pb2bv_all_clauses_limit": [4, 8, 16, 32, 64],
-    },
-    # "lia2pb"
-    38: {
-        "lia2pb_max_bits": [16, 32, 64, 128],
-    },
-}
-
 class MCTSNode():
-    def __init__(self, is_mean, logger, c_ucb, is_log, action_history=[]):
+    def __init__(self, logic, is_mean, logger, c_ucb, is_log, action_history=[]):
+        self.param_dict = create_params_dict(logic)
         self.isMean = is_mean
         self.c_ucb = c_ucb
         # self.alpha = alpha
@@ -86,12 +36,12 @@ class MCTSNode():
     def hasParamMABs(self):
         if len(self.actionHistory) == 0: return False
         lastestAction = self.actionHistory[-1]
-        return lastestAction in PARAMS.keys()
+        return lastestAction in self.param_dict.keys()
 
     def _setParamMABs(self):
         if not self.hasParamMABs(): return
         lastestAction = self.actionHistory[-1]
-        self.params = PARAMS[lastestAction]
+        self.params = self.param_dict[lastestAction]
         self.MABs = {}
         self.selected = {}
         for param in self.params.keys():
@@ -159,8 +109,9 @@ class MCTSNode():
 
 
 class MCTS_RUN():
-    def __init__(self, stage, config, bench_lst, logic, value_type, log_folder, tmp_folder, batch_size = 1, root = None):
+    def __init__(self, stage, config, bench_lst, logic, z3path, value_type, log_folder, tmp_folder, batch_size = 1, root = None):
         self.stage = stage
+        self.z3path = z3path
         self.config = config
         self.numSimulations = config['sim_num']
         self.isMean = config['is_mean_est']
@@ -185,7 +136,7 @@ class MCTS_RUN():
         simlog_handler = logging.FileHandler(f"{log_folder}/s{self.stage}mcts.log")
         self.sim_log.addHandler(simlog_handler)
         self.tmpFolder = tmp_folder
-        if not root: root = MCTSNode(self.isMean, self.sim_log, self.c_ucb, self.is_log)
+        if not root: root = MCTSNode(self.logic, self.isMean, self.sim_log, self.c_ucb, self.is_log)
         self.root = root
         self.bestReward = -1
         self.bestStrat = None
@@ -234,7 +185,7 @@ class MCTS_RUN():
         for action in actions:
             history = copy.deepcopy(node.actionHistory)
             history.append(action)
-            node.children[action] = MCTSNode(self.isMean, self.sim_log, self.c_ucb, self.is_log, history)
+            node.children[action] = MCTSNode(self.logic, self.isMean, self.sim_log, self.c_ucb, self.is_log, history)
 
     def _rollout(self):
         self.env.rollout()
@@ -253,7 +204,7 @@ class MCTS_RUN():
 
     def _oneSimulation(self):
         # now does not consider the root is not the game start
-        self.env = StrategyGame(self.stage, self.trainingLst, self.logic, self.timeout, self.config, self.batchSize, tmp_dir=self.tmpFolder)
+        self.env = StrategyGame(self.stage, self.trainingLst, self.logic, self.timeout, self.config, self.batchSize, tmp_dir=self.tmpFolder, z3path=self.z3path)
         selectNode, searchPath = self._select()
         if self.is_log:
             self.sim_log.info("Selected Node: " + str(selectNode))

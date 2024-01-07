@@ -13,10 +13,10 @@ from alphasmt.utils import calculatePercentile, write_strat_res_to_csv
 from alphasmt.strat_tree import PERCENTILES
 VALUE_TYPE = 'par10' # hard code for now
 
-def createBenchmarkList(benchmark_directory, timeout, batchSize, tmp_folder, is_sorted):
+def createBenchmarkList(benchmark_directory, timeout, batchSize, tmp_folder, z3path, is_sorted):
     benchmarkLst = [str(p) for p in sorted(list(pathlib.Path(benchmark_directory).rglob(f"*.smt2")))]
     if not is_sorted: return benchmarkLst
-    evaluator = Z3StrategyEvaluator(benchmarkLst, timeout, batchSize, tmp_dir=tmp_folder)
+    evaluator = Z3StrategyEvaluator(z3path, benchmarkLst, timeout, batchSize, tmp_dir=tmp_folder)
     resLst = evaluator.getResLst(None)
     # par2 list from resLst; for each entry (solved, time) in resLst, if solved, return time; else return 2 * timeout
     par2Lst = [2 * timeout if not res[0] else res[1] for res in resLst]
@@ -58,6 +58,8 @@ def createProbeStats(bench_lst):
 def stage1_synthesize(config, stream_logger, log_folder):
     startTime = time.time()
     logic = config['logic']
+    z3path = config['z3path'] if 'z3path' in config else "z3"
+    tmp_folder = config['temp_folder']
     batch_size = config['batch_size']
     s1config = config['s1config']
     num_ln_strat = config['ln_strat_num']
@@ -67,9 +69,9 @@ def stage1_synthesize(config, stream_logger, log_folder):
     
     # Stage 1
     s1_bench_dir = s1config['bench_dir']
-    s1BenchLst = createBenchmarkList(s1_bench_dir, s1config["timeout"], batch_size, tmp_folder, is_sorted=True)
+    s1BenchLst = createBenchmarkList(s1_bench_dir, s1config["timeout"], batch_size, tmp_folder, z3path, is_sorted=True)
     stream_logger.info("S1 MCTS Simulations Start")
-    run1 = MCTS_RUN(1, s1config, s1BenchLst, logic, VALUE_TYPE, log_folder, tmp_folder=tmp_folder, batch_size = batch_size)
+    run1 = MCTS_RUN(1, s1config, s1BenchLst, logic, z3path, VALUE_TYPE, log_folder, tmp_folder=tmp_folder, batch_size = batch_size)
     run1.start()
     s1_res_dict = run1.getResDict()
 
@@ -91,14 +93,15 @@ def stage1_synthesize(config, stream_logger, log_folder):
 
 def cache4stage2(selected_strat, config, stream_logger, log_folder):
     startTime = time.time()
+    z3path = config['z3path'] if 'z3path' in config else "z3"
     s2config = config['s2config']
     s2benchDir = s2config['bench_dir']
     s2timeout = s2config['timeout']
     batch_size = config['batch_size']
     tmp_folder = config['temp_folder']
-    s2benchLst = createBenchmarkList(s2benchDir, s2timeout, batch_size, tmp_folder, is_sorted=True)
+    s2benchLst = createBenchmarkList(s2benchDir, s2timeout, batch_size, tmp_folder, z3path, is_sorted=True)
     s2_res_dict = {}
-    s2evaluator = Z3StrategyEvaluator(s2benchLst, s2timeout, batch_size, tmp_dir=tmp_folder)
+    s2evaluator = Z3StrategyEvaluator(z3path, s2benchLst, s2timeout, batch_size, tmp_dir=tmp_folder)
     for i in range(len(selected_strat)):
         strat = selected_strat[i]
         stream_logger.info(f"Stage 2 Caching: {i+1}/{len(selected_strat)}")
@@ -128,6 +131,9 @@ def stage2_synthesize(res_dict, bench_lst, config, stream_logger, log_folder):
     s2dict['preprocess_dict'] = preprocess_dict
     s2dict['res_cache'] = s2_res_dict_acts
     logic = config['logic']
+    z3path = "z3"
+    if 'z3path' in config:
+        z3path = config['z3path'] 
     tmp_folder = config['temp_folder']
 
     s2startTime = time.time()
@@ -139,7 +145,7 @@ def stage2_synthesize(res_dict, bench_lst, config, stream_logger, log_folder):
     s2config = config['s2config']
     s2config["s2dict"] = s2dict
 
-    run2 = MCTS_RUN(2, s2config, bench_lst, logic, VALUE_TYPE, log_folder, tmp_folder=tmp_folder)
+    run2 = MCTS_RUN(2, s2config, bench_lst, logic, z3path, VALUE_TYPE, log_folder, tmp_folder=tmp_folder)
     run2.start()
     best_s2 = run2.getBestStrat()
     finalStratPath = os.path.join(log_folder, 'final_strategy.txt')

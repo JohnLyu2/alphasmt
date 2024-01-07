@@ -30,7 +30,8 @@ def main():
     # stage 2
     ln_strat0 = "smt"
     ln_strat1 = "(then (using-params simplify :elim_and true :som true :blast_distinct true :flat true :hi_div0 true :local_ctx true :hoist_mul true :push_ite_bv true :pull_cheap_ite true) ctx-simplify propagate-values qfnra-nlsat)"
-    ln_strat2 = "(then (using-params nla2bv :nla2bv_max_bv_size 4) smt)"
+    ln_strat2 = "(then (using-params nla2bv ) smt)"
+    # ln_strat2 = "(then (using-params nla2bv :nla2bv_max_bv_size 4) smt)"
     ln_strat3 = "(then card2bv cofactor-term-ite elim-uncnstr qfnra-nlsat)"
     selected_strat = [ln_strat0, ln_strat1, ln_strat2, ln_strat3]
     act_lst, solver_dict, preprocess_dict, s1strat2acts = convert_strats_to_act_lists(selected_strat)

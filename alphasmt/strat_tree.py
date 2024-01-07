@@ -202,22 +202,6 @@ class TacticNode(ASTNode):
         if self.isLeaf(): return False
         if self.parent.isTactic(): return False
         return True
-        
-    # def _is_last_then(self):
-    #     if not self.isLeaf(): return False
-    #     if self.parent.isTactic(): return True
-    #     return False
-
-    # def smt2str(self):
-    #     tactic_str = self._tactic_str()
-    #     if self._is_first_then():
-    #         tactic_str = f"(then {tactic_str}"
-    #     elif self._is_last_then():
-    #         tactic_str = f"{tactic_str})"
-    #     if self.isLeaf():
-    #         return tactic_str
-    #     else:
-    #         return f"{tactic_str} {self.children[0].smt2str()}"
 
     # in stage 2, tactic parameters are part of the name string; always return False for stage 2
     def hasParams(self):
@@ -259,6 +243,12 @@ class PreprocessTactic(ASTNode):
             36: "add-bounds",
             37: "normalize-bounds",
             38: "lia2pb",
+            # 40
+            40: "ext_str",
+            41: "ext_strSimplify",
+            42: "ext_strToRegex",
+            43: "ext_strToWE",
+
         }
 
     def __str__(self):
@@ -281,6 +271,8 @@ class PreprocessTactic(ASTNode):
             return actions + [i for i in range(35,39)]
         elif self.logic == "QF_LRA":
             return actions
+        elif self.logic == "QF_S":
+            return actions + [40, 41, 42, 43]
         else: 
             raise Exception("unexpected smt logic")
 
@@ -304,7 +296,10 @@ class SolverTactic(ASTNode):
             14: "qfnia", # only for QF_NIA
             15: "qfnra", # only for QF_NRA
             16: "qflia", # only for QF_LIA
-            17: "qflra" # only for QF_LRA
+            17: "qflra", # only for QF_LRA
+            18: "arr", # only for QF_S
+            19: "las", # only for QF_UFBV
+
         }
 
     def __str__(self):
@@ -327,6 +322,8 @@ class SolverTactic(ASTNode):
             return actions + [17]
         elif self.logic == "SAT":
             return actions + [12]
+        elif self.logic == "QF_S":
+            return actions + [18, 19]
         else: 
             raise Exception("unexpected smt logic")
 

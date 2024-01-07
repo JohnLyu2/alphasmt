@@ -1,16 +1,18 @@
-SOLVER_TACTICS = ['smt', 'qfnra-nlsat', 'sat', 'qfbv', 'qfnia', 'qfnra', 'qflia', 'qflra']
+SOLVER_TACTICS = ['smt', 'qfnra-nlsat', 'sat', 'qfbv', 'qfnia', 'qfnra', 'qflia', 'qflra', 'arr', 'las']
 PREPROCESS_TACTICS = ['simplify', 'propagate-values', 'ctx-simplify', 'elim-uncnstr', 
                       'solve-eqs', 'purify-arith', 'max-bv-sharing', 'aig', 
                       'reduce-bv-size', 'ackermannize_bv', 'lia2card', 'card2bv',
                       'cofactor-term-ite', 'nla2bv', 'bv1-blast', 'bit-blast', 'pb2bv',
-                      'propagate-ineqs', 'add-bounds', 'normalize-bounds', 'lia2pb']
+                      'propagate-ineqs', 'add-bounds', 'normalize-bounds', 'lia2pb', 
+                      'ext_str', 'ext_strSimplify', 'ext_strToRegex', 'ext_strToWE']
 TACTIC_LST = SOLVER_TACTICS + PREPROCESS_TACTICS
 
 TACTICAL_LST = ['then', 'if', 'using-params']
 PARAM_LST = ['inline_vars', 'seed', 'factor', 'elim_and', 'som', 'blast_distinct', 
              'flat', 'hi_div0', 'local_ctx', 'hoist_mul', 'push_ite_bv', 
              'pull_cheap_ite', 'nla2bv_max_bv_size', 'add_bound_lower', 
-             'add_bound_upper', 'pb2bv_all_clauses_limit', 'lia2pb_max_bits', 'random_seed']
+             'add_bound_upper', 'pb2bv_all_clauses_limit', 'lia2pb_max_bits', 'random_seed',
+             'push_ite_arith', 'hoist_ite', 'arith_lhs']
 PRED_PROBES = ['>', 'is-qfbv-eq']
 NUM_PROBES = ['size', 'num-consts']
 MARKS = ['(', ')', ':']

@@ -1,7 +1,7 @@
 <Strategy>(QF_NIA/QF_NRA/QF_BV/SAT) := <SolvingTactic>(QF_NIA/QF_NRA/QF_BV)  [0]
 <Strategy>(QF_NIA/QF_NRA/QF_BV/SAT) := (then <PreprocessTactic>(QF_NIA/QF_NRA/QF_BV), <Strategy>(QF_NIA/QF_NRA/QF_BV))  [1]
 <Strategy>(QF_NIA/QF_NRA/QF_BV) := (or-else (try-for <Strategy>(QF_NIA/QF_NRA/QF_BV) <timeout>) <Strategy>(QF_NIA/QF_NRA/QF_BV))  [2]
-<Strategy>(QF_NIA/QF_NRA/QF_BV) := (if (> <num-probe percentile-value>) <Strategy>(QF_NIA/QF_NRA/QF_BV) <Strategy>(QF_NIA/QF_NRA/QF_BV))  [3]
+<Strategy>(QF_NIA/QF_NRA/QF_BV) := (if (> <num-probe> percentile-value>) <Strategy>(QF_NIA/QF_NRA/QF_BV) <Strategy>(QF_NIA/QF_NRA/QF_BV))  [3]
 
 <Strategy>(QF_NIA/QF_NRA) := (or-else (then nla2bv <Strategy>(BV)) <Strategy>(QF_NIA/QF_NRA))  [5]
 <Strategy>(QF_BV) := (if is-qfbv-eq (then bv1-blast <Strategy>(BV) <Strategy>(QF_BV)) [6]
