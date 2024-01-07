@@ -14,6 +14,7 @@ def main():
     configJsonPath = parser.parse_args()
     config = json.load(open(configJsonPath.json_config, 'r'))
 
+    z3path = config['z3path'] if 'z3path' in config else "z3"
     strat_files = config['strat_files']
     timeout = config['timeout']
     batchSize = config['batch_size']
@@ -31,7 +32,7 @@ def main():
                 strat_file = strat_files[solver]
                 strat = open(strat_file, 'r').read()
             csv_path = os.path.join(res_dir, f"{solver}.csv")
-            testEvaluator = Z3StrategyEvaluator(test_lst, timeout, batchSize, is_write_res=True, res_path=csv_path)
+            testEvaluator = Z3StrategyEvaluator(z3path, test_lst, timeout, batchSize, is_write_res=True, res_path=csv_path)
             resTuple = testEvaluator.testing(strat)
             csvwriter.writerow([solver, resTuple[0], resTuple[1], resTuple[2]])
             print(f"{solver} test results: solved {resTuple[0]} instances with par2 {resTuple[1]} and par10 {resTuple[2]:.2f}")
