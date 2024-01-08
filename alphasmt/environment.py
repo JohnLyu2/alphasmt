@@ -1,6 +1,6 @@
 import random
 from alphasmt.strat_tree import StrategyAST
-from alphasmt.evaluator import Z3StrategyEvaluator
+from alphasmt.evaluator import SolverEvaluator
 from alphasmt.utils import solvedNumReward, parNReward
 
 class StrategyGame():
@@ -12,7 +12,7 @@ class StrategyGame():
         else:
             self.stratAST = StrategyAST(2, logic, timeout, sconfig)
             self.probe_records = sconfig["s2dict"]["probe_records"]
-        self.simulator = Z3StrategyEvaluator(z3path, training_lst, timeout, batch_size, tmp_dir) # shallow copy for clone
+        self.simulator = SolverEvaluator(z3path, training_lst, timeout, batch_size, tmp_dir) # shallow copy for clone
         self.timeout = timeout
 
     def __str__(self) -> str:

@@ -14,11 +14,11 @@ log_handler = logging.StreamHandler()
 log_handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(message)s'))
 log.addHandler(log_handler)
 
-class Z3Runner(threading.Thread):
-    """ Runner which executes a single strategy on a single formula by calling Z3 in shell"""
-    def __init__(self, z3path, smt_file, timeout, id, strategy=None, tmp_dir="/tmp/"):
+class SolverRunner(threading.Thread):
+    """ Runner which executes (a single strategy) on a single formula by calling a solver in shell"""
+    def __init__(self, solver_path, smt_file, timeout, id, strategy=None, tmp_dir="/tmp/"):
         threading.Thread.__init__(self)
-        self.z3_path = z3path
+        self.solver_path = solver_path
         self.smt_file = smt_file
         self.timeout = timeout  # used only for output
         self.strategy = strategy
@@ -41,9 +41,9 @@ class Z3Runner(threading.Thread):
 
     def run(self):
         self.time_before = time.time()
-        z3_cmd = f"{self.z3_path} -smt2 {self.new_file_name} -st"
+        cmd = f"{self.solver_path} {self.new_file_name}"
         # z3_cmd = 'z3 -smt2 %s -st' % self.new_file_name
-        self.p = subprocess.Popen(shlex.split(z3_cmd), stdout=subprocess.PIPE)
+        self.p = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE)
         self.p.wait()
         self.time_after = time.time()
 
@@ -54,33 +54,34 @@ class Z3Runner(threading.Thread):
                 self.join()
             except OSError:
                 pass
-            return self.id, None, None, self.timeout, self.smt_file
+            return self.id, None, self.timeout, self.smt_file
 
         out, err = self.p.communicate()
 
         lines = out[:-1].decode("utf-8").split('\n')
         res = lines[0]
 
+        # this error format may not be the same with solvers other than z3
         if res.startswith('(error'):
             log.warn(f"Error occured when strategy: {self.strategy}\ninstance: {self.smt_file}\nMessage: {res}")
-            return self.id, None, None, None, self.smt_file
+            return self.id, None, None, self.smt_file
 
-        rlimit = None
-        for line in lines:
-            if 'rlimit' in line:
-                tokens = line.split(' ')
-                for token in tokens:
-                    if token.isdigit():
-                        rlimit = int(token)
+        # rlimit = None
+        # for line in lines:
+        #     if 'rlimit' in line:
+        #         tokens = line.split(' ')
+        #         for token in tokens:
+        #             if token.isdigit():
+        #                 rlimit = int(token)
 
         if res == 'unknown':
             res = None
 
-        return self.id, res, rlimit, self.time_after - self.time_before, self.smt_file
+        return self.id, res, self.time_after - self.time_before, self.smt_file
 
-class Z3StrategyEvaluator():
-    def __init__(self, z3path, benchmark_lst, timeout, batch_size, tmp_dir="/tmp/", is_write_res=False, res_path=None):
-        self.z3path = z3path
+class SolverEvaluator():
+    def __init__(self, solver_path, benchmark_lst, timeout, batch_size, tmp_dir="/tmp/", is_write_res=False, res_path=None):
+        self.solverPath = solver_path
         self.benchmarkLst = benchmark_lst
         assert (self.getBenchmarkSize() > 0)
         self.timeout = timeout
@@ -102,14 +103,14 @@ class Z3StrategyEvaluator():
             threads = []
             for id in batch_instance_ids:
                 smtfile = self.benchmarkLst[id]
-                runnerThread = Z3Runner(self.z3path,smtfile, self.timeout, id, strat_str, self.tmpDir)
+                runnerThread = SolverRunner(self.solverPath, smtfile, self.timeout, id, strat_str, self.tmpDir)
                 runnerThread.start()
                 threads.append(runnerThread)
             time_start = time.time()
             for task in threads:
                 time_left = max(0, self.timeout - (time.time() - time_start))
                 task.join(time_left)
-                id, resTask, rlimitTask, timeTask, pathTask = task.collect()
+                id, resTask, timeTask, pathTask = task.collect()
                 solved = True if (resTask == 'sat' or resTask == 'unsat') else False
                 results[id] = (solved, timeTask)
         # assert no entries in results is still -1

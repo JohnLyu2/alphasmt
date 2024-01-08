@@ -5,7 +5,7 @@ import os
 import pathlib
 from z3 import *
 
-from alphasmt.evaluator import Z3StrategyEvaluator
+from alphasmt.evaluator import SolverEvaluator
 from alphasmt.mcts import MCTS_RUN
 from alphasmt.selector import * 
 from alphasmt.utils import calculatePercentile, write_strat_res_to_csv
@@ -16,7 +16,7 @@ VALUE_TYPE = 'par10' # hard code for now
 def createBenchmarkList(benchmark_directory, timeout, batchSize, tmp_folder, z3path, is_sorted):
     benchmarkLst = [str(p) for p in sorted(list(pathlib.Path(benchmark_directory).rglob(f"*.smt2")))]
     if not is_sorted: return benchmarkLst
-    evaluator = Z3StrategyEvaluator(z3path, benchmarkLst, timeout, batchSize, tmp_dir=tmp_folder)
+    evaluator = SolverEvaluator(z3path, benchmarkLst, timeout, batchSize, tmp_dir=tmp_folder)
     resLst = evaluator.getResLst(None)
     # par2 list from resLst; for each entry (solved, time) in resLst, if solved, return time; else return 2 * timeout
     par2Lst = [2 * timeout if not res[0] else res[1] for res in resLst]
@@ -101,7 +101,7 @@ def cache4stage2(selected_strat, config, stream_logger, log_folder):
     tmp_folder = config['temp_folder']
     s2benchLst = createBenchmarkList(s2benchDir, s2timeout, batch_size, tmp_folder, z3path, is_sorted=True)
     s2_res_dict = {}
-    s2evaluator = Z3StrategyEvaluator(z3path, s2benchLst, s2timeout, batch_size, tmp_dir=tmp_folder)
+    s2evaluator = SolverEvaluator(z3path, s2benchLst, s2timeout, batch_size, tmp_dir=tmp_folder)
     for i in range(len(selected_strat)):
         strat = selected_strat[i]
         stream_logger.info(f"Stage 2 Caching: {i+1}/{len(selected_strat)}")
